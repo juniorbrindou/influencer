@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useVote } from '../context/VoteContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,7 +16,7 @@ const VoteModal: React.FC = () => {
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!/^\+?[0-9]{10,15}$/.test(phoneNumber)) {
       setError('Veuillez entrer un numéro WhatsApp valide');
       return;
@@ -26,17 +26,17 @@ const VoteModal: React.FC = () => {
       setError('Vous avez déjà voté avec ce numéro');
       return;
     }
-    
+
     setVerificationStep(true);
   };
 
   const handleCodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     if (verificationCode.length === 6 && /^\d+$/.test(verificationCode)) {
       submitVote(phoneNumber);
-      
+
       setTimeout(() => {
         navigate('/confirmation');
         resetSelection();
@@ -52,14 +52,14 @@ const VoteModal: React.FC = () => {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn">
         <div className="flex justify-between items-center p-5 bg-black text-yellow-500">
           <h2 className="text-xl font-semibold">Voter pour {selectedArtist.name}</h2>
-          <button 
+          <button
             onClick={resetSelection}
             className="p-1 rounded-full hover:bg-yellow-500 hover:text-black transition-all duration-300"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
-        
+
         <div className="p-6">
           {!verificationStep ? (
             <form onSubmit={handlePhoneSubmit} className="space-y-4">
@@ -70,23 +70,22 @@ const VoteModal: React.FC = () => {
                 <input
                   type="tel"
                   id="phone"
-                  placeholder="+33 6 12 34 56 78"
+                  placeholder="+225 99 99 99 99 99"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 ${
-                    error ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 ${error ? 'border-red-500' : 'border-gray-300'
+                    }`}
                 />
                 {error && <p className="mt-2 text-sm text-red-600 animate-shake">{error}</p>}
               </div>
-              
+
               <button
                 type="submit"
                 className="w-full py-2 bg-black text-yellow-500 rounded-md hover:bg-yellow-500 hover:text-black transition-all duration-300 transform active:scale-95"
               >
                 Recevoir un code pour voter
               </button>
-              
+
               <p className="text-sm text-gray-600 mt-2">
                 Nous vous enverrons un code de vérification pour confirmer votre vote.
               </p>
@@ -103,20 +102,18 @@ const VoteModal: React.FC = () => {
                   placeholder="123456"
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 ${
-                    error ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 ${error ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   maxLength={6}
                 />
                 {error && <p className="mt-2 text-sm text-red-600 animate-shake">{error}</p>}
               </div>
-              
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full py-2 bg-black text-yellow-500 rounded-md transition-all duration-300 transform active:scale-95 ${
-                  isSubmitting ? 'opacity-75 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-black'
-                }`}
+                className={`w-full py-2 bg-black text-yellow-500 rounded-md transition-all duration-300 transform active:scale-95 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-black'
+                  }`}
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center">
@@ -128,7 +125,7 @@ const VoteModal: React.FC = () => {
                   </span>
                 ) : "Confirmer mon vote"}
               </button>
-              
+
               <p className="text-sm text-gray-600 mt-2">
                 Entrez le code à 6 chiffres que vous avez reçu sur WhatsApp.
               </p>

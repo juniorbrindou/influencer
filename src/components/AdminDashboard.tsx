@@ -67,7 +67,7 @@ const AdminDashboard: React.FC = () => {
           </div>
           
           <div className="bg-purple-50 rounded-lg p-4">
-            <p className="text-sm text-purple-600 font-medium">Utilisateurs uniques</p>
+            <p className="text-sm text-purple-600 font-medium">Autre stat</p>
             <p className="text-2xl font-bold">{votes.length}</p>
           </div>
         </div>

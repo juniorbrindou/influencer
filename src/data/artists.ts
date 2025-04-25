@@ -2,51 +2,75 @@ import { Artist } from '../types';
 
 export const initialArtists: Artist[] = [
   {
-    id: '1',
-    name: 'Emma Johnson',
-    imageUrl: 'https://images.pexels.com/photos/1539935/pexels-photo-1539935.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    voteCount: 154
+    id: "8",
+    name: "Jean Michel ONNIN",
+    imageUrl: "https://scontent.fabj2-1.fna.fbcdn.net/v/t39.30808-6/321971571_556278652753819_7172227098506846649_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGLnakWWZrsXZ9FqwrNEF9or2a0Rc4fe0mvZrRFzh97SevAFGHuPUfYAY25UMta7XpM2JsU0rrWSCht4DwQEI4x&_nc_ohc=WYwUrr4iSD8Q7kNvwF8IxiE&_nc_oc=AdkcBwv8IygY3Bb701HBR1eIOa_s5LzLcI2BVZlBK238E2LRePLGXZBBSfV6shYIM1s&_nc_zt=23&_nc_ht=scontent.fabj2-1.fna&_nc_gid=bcB67O5OMwGrx4g1gqshTA&oh=00_AfFyxCQIDi8d2NgRhPhWzboiQVqiFwms6XfhErWvpv8xWg&oe=6811A51F",
+    voteCount: 125
   },
   {
-    id: '2',
-    name: 'Alex Rivera',
-    imageUrl: 'https://images.pexels.com/photos/1699161/pexels-photo-1699161.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    voteCount: 87
+    id: "9",
+    name: "Lala Fatima Haidara (La gouteuse)",
+    imageUrl: "https://scontent.fabj2-1.fna.fbcdn.net/v/t39.30808-6/345475120_623989789746921_6838809150239647602_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHXtUXR9Da8PZ-1fK5UQpTsYqL6PMB8EMFiovo8wHwQwXQZOgbmYCmjmdZ389dGUOVvzc3YE-zzYy3E8Ezrbr2K&_nc_ohc=kiwGWkaX_fQQ7kNvwELDDS9&_nc_oc=Adk21-ZaTcm84VI40eROuzkIJ4ldiPB_mIVU70DKfInW77XyJ-0a6VzhMx3WxN87t3o&_nc_zt=23&_nc_ht=scontent.fabj2-1.fna&_nc_gid=GrN0qPw39Ajd5Q6xhhT_pg&oh=00_AfFXYVHCtToXpRjvT9xvs1q_Ry-r0DWRd1fgcpbRhM12Ow&oe=68118F3F",
+    voteCount: 220
   },
   {
-    id: '3',
-    name: 'The Melodies',
-    imageUrl: 'https://images.pexels.com/photos/9201288/pexels-photo-9201288.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    voteCount: 236
+    id: "10",
+    name: "Marie-Paule Adjé",
+    imageUrl: "https://www.abidjanpeople.net/wp-content/uploads/2021/08/WhatsApp-Image-2021-08-16-at-15.54.44-696x464.jpeg",
+    voteCount: 190
   },
   {
-    id: '4',
-    name: 'Rhythm Kings',
-    imageUrl: 'https://images.pexels.com/photos/6966446/pexels-photo-6966446.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    voteCount: 102
+    id: "11",
+    name: "Paul Yves Ettien",
+    imageUrl: "https://scontent.fabj2-1.fna.fbcdn.net/v/t39.30808-6/368822965_880323576824041_9050352684898834596_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGeAQU_xoHkRZRtnJvt63gjj-IxlkuSO0WP4jGWS5I7Rfp7O4hUNn1ozVRBlCPDNI22eWz_W5opaQNzB18XeHxK&_nc_ohc=PaMnUSXcgcwQ7kNvwEz9esj&_nc_oc=AdnWRY4HzLQmVPgeF76GxmXSgBphxDbnfU2hR-R23nf5LAS9d9HWRz_L8Dm4RBQXiCI&_nc_zt=23&_nc_ht=scontent.fabj2-1.fna&_nc_gid=xFMnyDAGViDBYktSl_whcg&oh=00_AfHZHRiBPXlWTOVzfRyOWVIZu8J4lsmJs3XA4iaF54e3pQ&oe=68119051",
+    voteCount: 175
+  },
+  {
+    id: "12",
+    name: "BLEU Edith Brou",
+    imageUrl: "https://media-files.abidjan.net/qui/5318_qui_6436a6f2418ca.jpg",
+    voteCount: 160
+  },
+  {
+    id: "13",
+    name: "DJ TikTok",
+    imageUrl: "https://th.bing.com/th/id/R.a2440bd3e4a68049b9deebdace6b87ff?rik=iNatujg20uc4Jw&riu=http%3a%2f%2fwww.abidjancapitaledurire.com%2fwp-content%2fuploads%2f2021%2f02%2fDJTiktok_800px.jpg&ehk=%2fYptOveSanQTX%2fzMRRfNMr97bWzf9LbrTnT9gj46XQk%3d&risl=&pid=ImgRaw&r=0",
+    voteCount: 145
+  },
+  {
+    id: "14",
+    name: "Jordan Evraa",
+    imageUrl: "https://image.api.sportal365.com/process/smp-images-production/pulse.ci/05092024/d82e8c43-d23d-41c4-bcd9-04ed47110c91?operations=autocrop(1042:580)",
+    voteCount: 135
+  },
+  {
+    id: "15",
+    name: "Kevine Obin",
+    imageUrl: "https://kessiya.com/wp-content/uploads/2023/07/08D7D64D-D09E-45CE-AD51-E889566DD509-750x939.jpeg",
+    voteCount: 128
   },
   {
     id: '5',
-    name: 'Sarah Chen',
-    imageUrl: 'https://images.pexels.com/photos/1644924/pexels-photo-1644924.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    name: 'Juste Crépin Gondo',
+    imageUrl: 'https://kessiya.com/wp-content/uploads/2023/07/10E7FE7D-3AB5-4B0D-998E-FFC2EB4E1243-750x899.jpeg',
     voteCount: 198
   },
   {
     id: '6',
-    name: 'Jazz Collective',
-    imageUrl: 'https://images.pexels.com/photos/2682937/pexels-photo-2682937.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    name: 'Wilfried Sant\'Anna',
+    imageUrl: 'https://kessiya.com/wp-content/uploads/2023/07/68003B1E-2DB3-4205-9015-2D7C87DC9F4F-750x939.jpeg',
     voteCount: 167
   },
   {
     id: '7',
-    name: 'Sonic Wave',
-    imageUrl: 'https://images.pexels.com/photos/210922/pexels-photo-210922.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    name: 'Tosseta',
+    imageUrl: 'https://kessiya.com/wp-content/uploads/2023/07/D2E9EFAF-AE22-4D9A-9A2F-DF26CD408585-350x350.jpeg',
     voteCount: 142
   },
   {
     id: '8',
-    name: 'Aria Blaze',
-    imageUrl: 'https://images.pexels.com/photos/167527/pexels-photo-167527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    name: 'Le Grouilleur 3.0',
+    imageUrl: 'https://kessiya.com/wp-content/uploads/2023/07/7D2BE496-7D41-4F8F-A47B-337351C9C00F-750x750.jpeg',
     voteCount: 113
   }
 ];

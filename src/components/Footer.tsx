@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-600 mb-4 md:mb-0">
-            © {new Date().getFullYear()} ArtistVote. Tous droits réservés.
+            © {new Date().getFullYear()} Influenceur de l'année. Tous droits réservés.
           </p>
           
           <div className="flex items-center space-x-2 text-gray-600">
