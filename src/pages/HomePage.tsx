@@ -1,18 +1,18 @@
 import React from 'react';
-import ArtistCard from '../components/ArtistCard';
+import InfluenceurCard from '../components/ArtistCard';
 import VoteModal from '../components/VoteModal';
 import { useVote } from '../context/VoteContext';
 
 const HomePage: React.FC = () => {
-  const { artists, selectedArtist } = useVote();
+  const { listInfluenceur: influenceurs, selectedInfluenceur: selectedInfluenceur } = useVote();
 
   return (
     <div>
       {/* Hero Banner */}
       <div className="w-full h-[400px] relative mb-12">
-        <img 
-          src="/banner.jpg" 
-          alt="Première édition des influenceurs de l'année 2025" 
+        <img
+          src="/banner.jpg"
+          alt="Première édition des influenceurs de l'année 2025"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end">
@@ -36,16 +36,16 @@ const HomePage: React.FC = () => {
             Soutenez vos influenceurs préférés en votant pour eux. C'est gratuit et sans création de compte.
           </p>
         </div>
-        
-        {/* Artist Grid */}
+
+        {/* Influenceur Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {artists.map(artist => (
-            <ArtistCard key={artist.id} artist={artist} />
+          {influenceurs.map(influenceur => (
+            <InfluenceurCard key={influenceur.id} influenceur={influenceur} />
           ))}
         </div>
-        
+
         {/* Vote Modal */}
-        {selectedArtist && <VoteModal />}
+        {selectedInfluenceur && <VoteModal />}
       </div>
     </div>
   );

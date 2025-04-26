@@ -7,10 +7,10 @@ const ResultsPage: React.FC = () => {
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Résultats des votes</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Découvrez quels artistes sont en tête du classement actuel.
+          Découvrez quels influenceurs sont en tête du classement actuel.
         </p>
       </div>
-      
+
       <div className="max-w-3xl mx-auto">
         <ResultsChart />
       </div>

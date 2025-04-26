@@ -1,37 +1,37 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Artist, Vote } from '../types';
-import { initialArtists } from '../data/artists';
+import { Influenceur, Vote } from '../types';
+import { initialInfluenceurs } from '../data/artists';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface VoteContextType {
-  artists: Artist[];
+  listInfluenceur: Influenceur[];
   votes: Vote[];
-  selectedArtist: Artist | null;
+  selectedInfluenceur: Influenceur | null;
   phoneNumber: string;
   setPhoneNumber: (number: string) => void;
-  selectArtist: (artist: Artist) => void;
+  selectInfluenceur: (influenceur: Influenceur) => void;
   submitVote: (phone: string) => void;
   hasVoted: (phone: string) => boolean;
   resetSelection: () => void;
-  addArtist: (artist: Artist) => void;
-  removeArtist: (id: string) => void;
-  updateArtist: (artist: Artist) => void;
+  addInfluenceur: (influenceur: Influenceur) => void;
+  removeInfluenceur: (id: string) => void;
+  updateInfluenceur: (influenceur: Influenceur) => void;
 }
 
 const VoteContext = createContext<VoteContextType | undefined>(undefined);
 
 export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [artists, setArtists] = useLocalStorage<Artist[]>('artists', initialArtists);
+  const [influenceurs, setInfluenceurs] = useLocalStorage<Influenceur[]>('Influenceurs', initialInfluenceurs);
   const [votes, setVotes] = useLocalStorage<Vote[]>('votes', []);
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [selectedInfluenceur, setSelectedInfluenceur] = useState<Influenceur | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
 
-  const selectArtist = (artist: Artist) => {
-    setSelectedArtist(artist);
+  const selectInfluenceur = (influenceur: Influenceur) => {
+    setSelectedInfluenceur(influenceur);
   };
 
   const resetSelection = () => {
-    setSelectedArtist(null);
+    setSelectedInfluenceur(null);
     setPhoneNumber('');
   };
 
@@ -40,55 +40,55 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const submitVote = (phone: string) => {
-    if (!selectedArtist || hasVoted(phone)) return;
+    if (!selectedInfluenceur || hasVoted(phone)) return;
     
     // Add the vote to the votes array
     const newVote: Vote = {
-      artistId: selectedArtist.id,
+      influenceurId: selectedInfluenceur.id,
       phoneNumber: phone,
       timestamp: Date.now()
     };
     setVotes([...votes, newVote]);
     
-    // Update the artist's vote count
-    setArtists(prevArtists =>
-      prevArtists.map(artist =>
-        artist.id === selectedArtist.id
-          ? { ...artist, voteCount: artist.voteCount + 1 }
-          : artist
+    // Update the Influenceur's vote count
+    setInfluenceurs(prevInfluenceurs =>
+      prevInfluenceurs.map(influenceur =>
+        influenceur.id === selectedInfluenceur.id
+          ? { ...influenceur, voteCount: influenceur.voteCount + 1 }
+          : influenceur
       )
     );
   };
 
-  const addArtist = (artist: Artist) => {
-    setArtists([...artists, { ...artist, id: String(Date.now()), voteCount: 0 }]);
+  const addInfluenceur = (influenceur: Influenceur) => {
+    setInfluenceurs([...influenceurs, { ...influenceur, id: String(Date.now()), voteCount: 0 }]);
   };
 
-  const removeArtist = (id: string) => {
-    setArtists(artists.filter(artist => artist.id !== id));
+  const removeInfluenceur = (id: string) => {
+    setInfluenceurs(influenceurs.filter(influenceur => influenceur.id !== id));
   };
 
-  const updateArtist = (updatedArtist: Artist) => {
-    setArtists(artists.map(artist => 
-      artist.id === updatedArtist.id ? updatedArtist : artist
+  const updateInfluenceur = (updatedInfluenceur: Influenceur) => {
+    setInfluenceurs(influenceurs.map(influenceur => 
+      influenceur.id === updatedInfluenceur.id ? updatedInfluenceur : influenceur
     ));
   };
 
   return (
     <VoteContext.Provider
       value={{
-        artists,
+        listInfluenceur: influenceurs,
         votes,
-        selectedArtist,
+        selectedInfluenceur: selectedInfluenceur,
         phoneNumber,
         setPhoneNumber,
-        selectArtist,
+        selectInfluenceur: selectInfluenceur,
         submitVote,
         hasVoted,
         resetSelection,
-        addArtist,
-        removeArtist,
-        updateArtist
+        addInfluenceur: addInfluenceur,
+        removeInfluenceur: removeInfluenceur,
+        updateInfluenceur: updateInfluenceur
       }}
     >
       {children}

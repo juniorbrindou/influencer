@@ -4,14 +4,14 @@ import { useVote } from '../context/VoteContext';
 import { useNavigate } from 'react-router-dom';
 
 const VoteModal: React.FC = () => {
-  const { selectedArtist, phoneNumber, setPhoneNumber, submitVote, resetSelection, hasVoted } = useVote();
+  const { selectedInfluenceur: selectedInfluenceur, phoneNumber, setPhoneNumber, submitVote, resetSelection, hasVoted } = useVote();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verificationStep, setVerificationStep] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const navigate = useNavigate();
 
-  if (!selectedArtist) return null;
+  if (!selectedInfluenceur) return null;
 
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +51,7 @@ const VoteModal: React.FC = () => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn">
         <div className="flex justify-between items-center p-5 bg-black text-yellow-500">
-          <h2 className="text-xl font-semibold">Voter pour {selectedArtist.name}</h2>
+          <h2 className="text-xl font-semibold">Voter pour {selectedInfluenceur.name}</h2>
           <button
             onClick={resetSelection}
             className="p-1 rounded-full hover:bg-yellow-500 hover:text-black transition-all duration-300"
@@ -70,7 +70,7 @@ const VoteModal: React.FC = () => {
                 <input
                   type="tel"
                   id="phone"
-                  placeholder="+225 99 99 99 99 99"
+                  placeholder="+225 9999999999"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 ${error ? 'border-red-500' : 'border-gray-300'

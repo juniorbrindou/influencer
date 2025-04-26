@@ -14,7 +14,7 @@ function App() {
       <Router>
         <div className="min-h-screen flex flex-col bg-gray-100">
           <Header />
-          
+
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<HomePage />} />
@@ -23,7 +23,7 @@ function App() {
               <Route path="/admin" element={<AdminPage />} />
             </Routes>
           </main>
-          
+
           <Footer />
         </div>
       </Router>

@@ -1,6 +1,6 @@
-import { Artist } from '../types';
+import { Influenceur } from '../types';
 
-export const initialArtists: Artist[] = [
+export const initialInfluenceurs: Influenceur[] = [
   {
     id: "8",
     name: "Jean Michel ONNIN",

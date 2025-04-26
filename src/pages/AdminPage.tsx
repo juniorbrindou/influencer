@@ -14,7 +14,7 @@ const AdminPage: React.FC = () => {
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-800">Panneau d'administration</h1>
             <p className="text-gray-600">
-              Gérez les artistes et consultez les statistiques de vote.
+              Gérez les influenceurs et consultez les statistiques de vote.
             </p>
           </div>
           

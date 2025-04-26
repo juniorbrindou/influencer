@@ -1,4 +1,4 @@
-export interface Artist {
+export interface Influenceur {
   id: string;
   name: string;
   imageUrl: string;
@@ -6,7 +6,7 @@ export interface Artist {
 }
 
 export interface Vote {
-  artistId: string;
+  influenceurId: string;
   phoneNumber: string;
   timestamp: number;
 }
