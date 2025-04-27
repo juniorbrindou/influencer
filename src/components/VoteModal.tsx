@@ -39,7 +39,7 @@ const VoteModal: React.FC = () => {
 
     // Vérifie si le numéro a déjà voté
     if (await hasVoted(phoneNumber)) {
-      setError('Vous avez déjà voté avec ce numéro 2'); //todo retirer le 2
+      setError('Vous avez déjà voté avec ce numéro');
       return; // Arrête l'exécution si le numéro a déjà voté
     }
 

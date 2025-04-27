@@ -73,7 +73,7 @@ app.get("/api/votes", async (req, res) => {
     });
 
     if (existingVote) {
-      return res.json({ hasVoted: false }); //todo: changer en true si le vote existe
+      return res.json({ hasVoted: true });
     } else {
       return res.json({ hasVoted: false });
     }
@@ -92,10 +92,9 @@ app.post("/api/votes", async (req, res) => {
       where: { phoneNumber },
     });
 
-    // Todo: decommenter cette partie si on veut empêcher les votes multiples
-    // if (existingVote) {
-    //   return res.status(400).json({ error: "Vous avez déjà voté" });
-    // }
+    if (existingVote) {
+      return res.status(400).json({ error: "Vous avez déjà voté" });
+    }
 
     // Créer le vote
     const vote = await prisma.votes.create({
