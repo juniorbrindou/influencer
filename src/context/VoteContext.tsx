@@ -41,7 +41,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const submitVote = (phone: string) => {
     if (!selectedInfluenceur || hasVoted(phone)) return;
-    
+
     // Add the vote to the votes array
     const newVote: Vote = {
       influenceurId: selectedInfluenceur.id,
@@ -49,7 +49,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: Date.now()
     };
     setVotes([...votes, newVote]);
-    
+
     // Update the Influenceur's vote count
     setInfluenceurs(prevInfluenceurs =>
       prevInfluenceurs.map(influenceur =>
@@ -69,7 +69,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateInfluenceur = (updatedInfluenceur: Influenceur) => {
-    setInfluenceurs(influenceurs.map(influenceur => 
+    setInfluenceurs(influenceurs.map(influenceur =>
       influenceur.id === updatedInfluenceur.id ? updatedInfluenceur : influenceur
     ));
   };
