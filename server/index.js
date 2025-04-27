@@ -32,21 +32,33 @@ io.on("connection", (socket) => {
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
   try {
-    const influenceurs = await prisma.influenceurs.findMany({
-      include: {
-        _count: {
-          select: { votes: true },
-        },
-      },
-    });
+    const influenceurs = await prisma.influenceurs.findMany(
+    //   {
+    //   include: {
+    //     _count: {
+    //       select: { votes: true },
+    //     },
+    //   },
+    // }
+    );
 
-    const influenceursWithVoteCount = influenceurs.map((influenceur) => ({
-      ...influenceur,
-      voteCount: influenceur._count.votes,
-    }));
+    console.log("Influenceurs récupérés :", influenceurs);
+    const influenceursWithVoteCount = influenceurs
+
+
+    // const influenceursWithVoteCount = influenceurs.map((influenceur) => ({
+    //   ...influenceur,
+    //   voteCount: influenceur._count.votes,
+    // }));
+
+    // Loguer la réponse pour vérifier son contenu
+    console.log("Réponse générée :", influenceursWithVoteCount);
 
     res.json(influenceursWithVoteCount);
   } catch (error) {
+    // Loguer l'erreur pour déboguer plus facilement
+    console.error("Erreur lors de la récupération des influenceurs :", error);
+
     res
       .status(500)
       .json({ error: "Erreur lors de la récupération des influenceurs" });
@@ -98,7 +110,7 @@ app.post("/api/votes", async (req, res) => {
   }
 });
 
-
+const PORT = process.env.PORT || 3000;
 // Lister toutes les routes
 app._router.stack
   .filter((layer) => layer.route)
@@ -107,11 +119,11 @@ app._router.stack
     methods: Object.keys(layer.route.methods),
   }))
   .forEach((route) => {
-    console.log(`Méthodes: ${route.methods.join(", ")}, Chemin: ${route.path}`);
+    console.log(`Méthodes: ${route.methods.join(", ")}, Chemin: http://localhost:${PORT}${route.path}`);
   });
 
 
-const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
