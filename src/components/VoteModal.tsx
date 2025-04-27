@@ -27,7 +27,7 @@ const VoteModal: React.FC = () => {
   if (!selectedInfluenceur) return null;
 
   // Gère la soumission du formulaire de numéro de téléphone
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // Empêche le rechargement de la page
     setError(null); // Réinitialise les erreurs
 
@@ -38,7 +38,7 @@ const VoteModal: React.FC = () => {
     }
 
     // Vérifie si le numéro a déjà voté
-    if (hasVoted(phoneNumber)) {
+    if (await hasVoted(phoneNumber)) {
       setError('Vous avez déjà voté avec ce numéro');
       return; // Arrête l'exécution si le numéro a déjà voté
     }
