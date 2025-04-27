@@ -126,8 +126,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Erreur lors du vote 3');
       }
 
-      const newVote = await response.json();
-      setVotes([...votes, newVote]);
+      // const newVote = await response.json();
+      // setVotes([...votes, newVote]);
+      fetchInfluenceurs()
+
       resetSelection();
 
 

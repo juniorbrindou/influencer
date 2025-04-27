@@ -86,17 +86,11 @@ app.get("/api/votes", async (req, res) => {
 // POST vote
 app.post("/api/votes", async (req, res) => {
   const { influenceurId: influenceurId, phoneNumber: phoneNumber } = req.body;
-  console.log("------------------------------------------------------");
-  console.log("Requête reçue pour /api/votes avec les données :", req.body);
-  console.log("------------------------------------------------------");
   try {
     // Vérifier si l'utilisateur a déjà voté
     const existingVote = await prisma.votes.findFirst({
       where: { phoneNumber },
     });
-    console.log("Numéro de téléphone :", phoneNumber);
-    console.log("ID de l'influenceur :", influenceurId);
-    console.log("Vote existant :", existingVote);
 
     // Todo: decommenter cette partie si on veut empêcher les votes multiples
     // if (existingVote) {
@@ -112,21 +106,19 @@ app.post("/api/votes", async (req, res) => {
       },
     });
 
-    // Récupérer le nouveau compte de votes
-    const updatedInfluenceur = await prisma.influenceurs.findUnique({
-      where: { id: influenceurId },
-      include: {
-        _count: {
-          select: { votes: true },
-        },
-      },
-    });
+    // // Récupérer le nouveau compte de votes
+    // const updatedInfluenceur = await prisma.influenceurs.findUnique({
+    //   where: { id: influenceurId },
+    //   include: {
+    //     votes: true
+    //   },
+    // });
 
-    // Émettre l'événement de mise à jour en temps réel
-    io.emit("voteUpdate", {
-      influenceurId,
-      newVoteCount: updatedInfluenceur._count.votes,
-    });
+    // // Émettre l'événement de mise à jour en temps réel
+    // io.emit("voteUpdate", {
+    //   influenceurId,
+    //   newVoteCount: updatedInfluenceur._count.votes,
+    // });
 
     res.json(vote);
   } catch (error) {
