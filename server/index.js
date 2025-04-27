@@ -31,59 +31,83 @@ io.on("connection", (socket) => {
 
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
+  console.log("Requête reçue pour /api/influenceurs");
+
   try {
-    const influenceurs = await prisma.influenceurs.findMany(
-    //   {
-    //   include: {
-    //     _count: {
-    //       select: { votes: true },
-    //     },
-    //   },
-    // }
-    );
+    const influenceurs = await prisma.influenceurs.findMany({
+      include: {
+        Votes: true, // On récupère aussi les votes
+      },
+    });
 
-    console.log("Influenceurs récupérés :", influenceurs);
-    const influenceursWithVoteCount = influenceurs
+    // Maintenant on construit le résultat avec voteCount
+    const influenceursWithVoteCount = influenceurs.map((influenceur) => ({
+      id: influenceur.id,
+      name: influenceur.name,
+      imageUrl: influenceur.imageUrl,
+      voteCount: influenceur.Votes.length, // Magie ici
+    }));
 
-
-    // const influenceursWithVoteCount = influenceurs.map((influenceur) => ({
-    //   ...influenceur,
-    //   voteCount: influenceur._count.votes,
-    // }));
-
-    // Loguer la réponse pour vérifier son contenu
     console.log("Réponse générée :", influenceursWithVoteCount);
 
     res.json(influenceursWithVoteCount);
   } catch (error) {
-    // Loguer l'erreur pour déboguer plus facilement
     console.error("Erreur lors de la récupération des influenceurs :", error);
-
     res
       .status(500)
       .json({ error: "Erreur lors de la récupération des influenceurs" });
   }
 });
 
-// Route pour voter
-app.post("/api/votes", async (req, res) => {
-  const { influenceurId: influenceurId, phoneNumber } = req.body;
+// Route pour vérifier si un numéro a déjà voté
+app.get("/api/votes", async (req, res) => {
+  const { phoneNumber } = req.query; // <-- attention ici, c'est dans req.query (pas body)
+
+  if (!phoneNumber) {
+    return res.status(400).json({ error: "Numéro de téléphone manquant" });
+  }
 
   try {
-    // Vérifier si l'utilisateur a déjà voté
-    const existingVote = await prisma.vote.findFirst({
-      where: { phoneNumber },
+    const existingVote = await prisma.votes.findFirst({
+      where: { phoneNumber: phoneNumber },
     });
 
     if (existingVote) {
-      return res.status(400).json({ error: "Vous avez déjà voté" });
+      return res.json({ hasVoted: false }); //todo: changer en true si le vote existe
+    } else {
+      return res.json({ hasVoted: false });
     }
+  } catch (error) {
+    console.error("Erreur lors de la vérification du vote:", error);
+    res.status(500).json({ error: "Erreur serveur pendant la vérification" });
+  }
+});
+
+// POST vote
+app.post("/api/votes", async (req, res) => {
+  const { influenceurId: influenceurId, phoneNumber: phoneNumber } = req.body;
+  console.log("------------------------------------------------------");
+  console.log("Requête reçue pour /api/votes avec les données :", req.body);
+  console.log("------------------------------------------------------");
+  try {
+    // Vérifier si l'utilisateur a déjà voté
+    const existingVote = await prisma.votes.findFirst({
+      where: { phoneNumber },
+    });
+    console.log("Numéro de téléphone :", phoneNumber);
+    console.log("ID de l'influenceur :", influenceurId);
+    console.log("Vote existant :", existingVote);
+
+    // Todo: decommenter cette partie si on veut empêcher les votes multiples
+    // if (existingVote) {
+    //   return res.status(400).json({ error: "Vous avez déjà voté" });
+    // }
 
     // Créer le vote
-    const vote = await prisma.vote.create({
+    const vote = await prisma.votes.create({
       data: {
         influenceurId: influenceurId,
-        phoneNumber,
+        phoneNumber: phoneNumber,
         timestamp: new Date(),
       },
     });
@@ -119,10 +143,12 @@ app._router.stack
     methods: Object.keys(layer.route.methods),
   }))
   .forEach((route) => {
-    console.log(`Méthodes: ${route.methods.join(", ")}, Chemin: http://localhost:${PORT}${route.path}`);
+    console.log(
+      `Méthodes: ${route.methods.join(", ")}, Chemin: http://localhost:${PORT}${
+        route.path
+      }`
+    );
   });
-
-
 
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);

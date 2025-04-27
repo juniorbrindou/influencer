@@ -22,10 +22,8 @@ const socket = io('http://localhost:3000');
 
 
 export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // const [influenceurs, setInfluenceurs] = useLocalStorage<Influenceur[]>('Influenceurs', initialInfluenceurs);
   const [influenceurs, setInfluenceurs] = useState<Influenceur[]>([]);
 
-  // const [votes, setVotes] = useLocalStorage<Vote[]>('votes', []);
   const [votes, setVotes] = useState<Vote[]>([]);
 
   const [selectedInfluenceur, setSelectedInfluenceur] = useState<Influenceur | null>(null);
@@ -85,11 +83,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-
-  // const hasVoted = (phone: string): boolean => {
-  //   return votes.some(vote => vote.phoneNumber === phone);
-  // };
-
   const hasVoted = async (phone: string): Promise<boolean> => {
     try {
       const response = await fetch(`http://localhost:3000/api/votes?phoneNumber=${phone}`);
@@ -110,32 +103,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-
-
-  // const submitVote = (phone: string) => {
-  //   if (!selectedInfluenceur || hasVoted(phone)) return;
-
-  //   // Add the vote to the votes array
-  //   const newVote: Vote = {
-  //     influenceurId: selectedInfluenceur.id,
-  //     phoneNumber: phone,
-  //     timestamp: Date.now()
-  //   };
-  //   setVotes([...votes, newVote]);
-
-  //   // Update the Influenceur's vote count
-  //   setInfluenceurs(prevInfluenceurs =>
-  //     prevInfluenceurs.map(influenceur =>
-  //       influenceur.id === selectedInfluenceur.id
-  //         ? { ...influenceur, voteCount: influenceur.voteCount + 1 }
-  //         : influenceur
-  //     )
-  //   );
-  // };
-
-
   const submitVote = async (phone: string) => {
     if (!selectedInfluenceur) return;
+
+    console.log('Submitting vote for:', selectedInfluenceur.name, 'with phone:', phone);
 
     try {
       const response = await fetch('http://localhost:3000/api/votes', {
@@ -150,14 +121,22 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors du vote');
+        const text = await response.text();
+        console.error('Erreur serveur 5:', text);
+        throw new Error('Erreur lors du vote 3');
       }
 
       const newVote = await response.json();
       setVotes([...votes, newVote]);
       resetSelection();
+
+
     } catch (error) {
-      console.error('Erreur lors du vote:', error);
+      if (error instanceof Error) {
+        console.error('Erreur lors du vote 1:', error.message);
+      } else {
+        console.error('Erreur lors du vote 2:', error);
+      }
     }
   };
 
@@ -166,12 +145,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-
-
-
-  // const addInfluenceur = (influenceur: Influenceur) => {
-  //   setInfluenceurs([...influenceurs, { ...influenceur, id: String(Date.now()), voteCount: 0 }]);
-  // };
 
   const addInfluenceur = async (influenceur: Influenceur) => {
     try {
@@ -213,10 +186,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-  // const removeInfluenceur = (id: string) => {
-  //   setInfluenceurs(influenceurs.filter(influenceur => influenceur.id !== id));
-  // };
-
   const removeInfluenceur = async (id: string) => {
     try {
       await fetch(`http://localhost:3000/api/influenceurs/${id}`, {
@@ -237,11 +206,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-  // const updateInfluenceur = (updatedInfluenceur: Influenceur) => {
-  //   setInfluenceurs(influenceurs.map(influenceur =>
-  //     influenceur.id === updatedInfluenceur.id ? updatedInfluenceur : influenceur
-  //   ));
-  // };
 
   const updateInfluenceur = async (updatedInfluenceur: Influenceur) => {
     try {
@@ -282,28 +246,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-
-
-  // return (
-  //   <VoteContext.Provider
-  //     value={{
-  //       listInfluenceur: influenceurs,
-  //       votes,
-  //       selectedInfluenceur: selectedInfluenceur,
-  //       phoneNumber,
-  //       setPhoneNumber,
-  //       selectInfluenceur: selectInfluenceur,
-  //       submitVote,
-  //       hasVoted,
-  //       resetSelection,
-  //       addInfluenceur: addInfluenceur,
-  //       removeInfluenceur: removeInfluenceur,
-  //       updateInfluenceur: updateInfluenceur
-  //     }}
-  //   >
-  //     {children}
-  //   </VoteContext.Provider>
-  // );
 
 
 

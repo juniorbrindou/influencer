@@ -14,7 +14,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  // Save to localStorage whenever storedValue changes
+  // enregistrement dans le localStorage lorsque la valeur change
   useEffect(() => {
     try {
       window.localStorage.setItem(key, JSON.stringify(storedValue));
