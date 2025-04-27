@@ -1,6 +1,6 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 import { Influenceur, Vote } from '../types';
-import { initialInfluenceurs } from '../data/artists';
+import { initialInfluenceurs } from '../data/influenceurs';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface VoteContextType {

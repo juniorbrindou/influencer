@@ -1,136 +1,194 @@
 import React, { useState } from 'react';
+// Importe le hook personnalisé useVote depuis le contexte VoteContext
 import { useVote } from '../context/VoteContext';
+// Importe les icônes depuis la bibliothèque lucide-react
 import { PlusCircle, Edit, Trash2, Save, X } from 'lucide-react';
+// Importe le type Influenceur depuis le fichier types
 import { Influenceur } from '../types';
 
+/**
+ * Composant AdminDashboard pour gérer les influenceurs et afficher les statistiques de vote.
+ */
 const AdminDashboard: React.FC = () => {
-  const { listInfluenceur: influenceurs, votes, addInfluenceur: addInfluenceur, removeInfluenceur: removeInfluenceur, updateInfluenceur: updateInfluenceur } = useVote();
+  // Extrait les données et fonctions nécessaires du contexte VoteContext
+  const { listInfluenceur: influenceurs, votes, addInfluenceur, removeInfluenceur, updateInfluenceur } = useVote();
+
+  // État pour contrôler l'affichage du formulaire d'ajout d'influenceur
   const [isAddingInfluenceur, setIsAddingInfluenceur] = useState(false);
+  // État pour stocker l'ID de l'influenceur en cours d'édition
   const [editingInfluenceurId, setEditingInfluenceurId] = useState<string | null>(null);
+  // État pour stocker les données du nouvel influenceur en cours de création
   const [newInfluenceur, setNewInfluenceur] = useState<Partial<Influenceur>>({
     name: '',
     imageUrl: ''
   });
+  // État pour stocker les données de l'influenceur en cours d'édition
   const [editInfluenceur, setEditInfluenceur] = useState<Influenceur | null>(null);
 
-  // Total number of votes
+  // Calcule le nombre total de votes en additionnant les voteCount de tous les influenceurs
   const totalVotes = influenceurs.reduce((total, influenceur) => total + influenceur.voteCount, 0);
 
+  /**
+   * Gère l'ajout d'un nouvel influenceur.
+   * Vérifie que le nom et l'URL de l'image sont présents.
+   * Appelle la fonction addInfluenceur du contexte.
+   * Réinitialise le formulaire et masque le formulaire d'ajout.
+   */
   const handleAddInfluenceur = () => {
+    // Vérification simple : si le nom ou l'imageUrl est vide, on ne fait rien
     if (!newInfluenceur.name || !newInfluenceur.imageUrl) return;
 
+    // Appelle la fonction pour ajouter l'influenceur via le contexte
     addInfluenceur({
-      id: '',
+      id: '', // L'ID sera probablement généré côté backend ou par le contexte lui-même
       name: newInfluenceur.name,
       imageUrl: newInfluenceur.imageUrl,
-      voteCount: 0
+      voteCount: 0 // Un nouvel influenceur commence avec 0 vote
     });
 
-    // Reset form
+    // Réinitialise les champs du formulaire d'ajout
     setNewInfluenceur({ name: '', imageUrl: '' });
+    // Masque le formulaire d'ajout
     setIsAddingInfluenceur(false);
   };
 
+  /**
+   * Prépare l'édition d'un influenceur.
+   * Définit l'ID de l'influenceur à éditer et copie ses données dans l'état editInfluenceur.
+   * @param influenceur L'objet Influenceur à éditer.
+   */
   const handleEditInfluenceur = (influenceur: Influenceur) => {
+    // Définit l'ID de l'influenceur qui est en cours d'édition
     setEditingInfluenceurId(influenceur.id);
+    // Copie les données de l'influenceur dans l'état dédié à l'édition
+    // Utilise l'opérateur spread (...) pour créer une copie et éviter les mutations directes
     setEditInfluenceur({ ...influenceur });
   };
 
+  /**
+   * Gère la sauvegarde des modifications apportées à un influenceur.
+   * Appelle la fonction updateInfluenceur du contexte si des données d'édition existent.
+   * Réinitialise l'état d'édition.
+   */
   const handleSaveEdit = () => {
+    // Vérifie si un influenceur est en cours d'édition
     if (editInfluenceur) {
+      // Appelle la fonction pour mettre à jour l'influenceur via le contexte
       updateInfluenceur(editInfluenceur);
     }
+    // Quitte le mode édition en réinitialisant l'ID d'édition
     setEditingInfluenceurId(null);
+    // Optionnel : Réinitialiser editInfluenceur à null
+    setEditInfluenceur(null);
   };
 
+  /**
+   * Gère la suppression d'un influenceur après confirmation.
+   * @param id L'ID de l'influenceur à supprimer.
+   */
   const handleDeleteInfluenceur = (id: string) => {
+    // Affiche une boîte de dialogue de confirmation
     if (window.confirm('Êtes-vous sûr de vouloir retirer cet influenceur de la course ?')) {
+      // Appelle la fonction pour supprimer l'influenceur via le contexte
       removeInfluenceur(id);
     }
   };
 
+  // Rendu JSX du composant
   return (
-    <div className="space-y-8">
-      {/* Dashboard Header */}
+    <div className="space-y-8 p-4 md:p-6 lg:p-8"> {/* Ajout de padding pour l'espacement général */}
+
+      {/* Section En-tête du Tableau de Bord */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Tableau de bord</h2>
 
+        {/* Grille pour afficher les statistiques clés */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Carte : Total des influenceurs */}
           <div className="bg-blue-50 rounded-lg p-4">
             <p className="text-sm text-blue-600 font-medium">Total des influenceurs</p>
             <p className="text-2xl font-bold">{influenceurs.length}</p>
           </div>
 
+          {/* Carte : Total des votes */}
           <div className="bg-green-50 rounded-lg p-4">
             <p className="text-sm text-green-600 font-medium">Total des votes</p>
             <p className="text-2xl font-bold">{totalVotes}</p>
           </div>
 
+          {/* Carte : Autre statistique (nombre d'enregistrements de votes individuels) */}
           <div className="bg-purple-50 rounded-lg p-4">
-            <p className="text-sm text-purple-600 font-medium">Autre stat</p>
+            <p className="text-sm text-purple-600 font-medium">Nb. Votes Enregistrés</p> {/* Libellé plus clair */}
             <p className="text-2xl font-bold">{votes.length}</p>
           </div>
         </div>
       </div>
 
-      {/* Influenceur Management */}
+      {/* Section Gestion des Influenceurs */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4"> {/* Responsive flex */}
           <h2 className="text-xl font-semibold text-gray-800">Gestion des influenceurs</h2>
 
+          {/* Bouton pour afficher le formulaire d'ajout */}
           <button
             onClick={() => setIsAddingInfluenceur(true)}
-            className="px-4 py-2 bg-[#28a745] text-white rounded-md hover:bg-[#218838] transition-colors flex items-center"
+            className="w-full sm:w-auto px-4 py-2 bg-[#28a745] text-white rounded-md hover:bg-[#218838] transition-colors flex items-center justify-center" // Centrer sur mobile
           >
             <PlusCircle className="h-4 w-4 mr-2" />
             Ajouter un Influenceur
           </button>
         </div>
 
+        {/* Formulaire d'ajout d'influenceur (conditionnel) */}
         {isAddingInfluenceur && (
-          <div className="mb-6 p-4 border border-gray-200 rounded-lg">
-            <h3 className="text-lg font-medium mb-3">Nouvel Influenceur</h3>
+          <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50"> {/* Fond léger pour distinction */}
+            <h3 className="text-lg font-medium mb-3 text-gray-700">Nouvel Influenceur</h3>
 
             <div className="space-y-4">
+              {/* Champ : Nom de l'influenceur */}
               <div>
-                <label htmlFor="artistName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="influenceurNameAdd" className="block text-sm font-medium text-gray-700 mb-1">
                   Nom de l'influenceur
                 </label>
                 <input
                   type="text"
-                  id="artistName"
+                  id="influenceurNameAdd" // ID unique
                   value={newInfluenceur.name}
                   onChange={(e) => setNewInfluenceur({ ...newInfluenceur, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm" // Style amélioré
+                  placeholder="ex: Jean Dupont"
                 />
               </div>
 
+              {/* Champ : URL de l'image */}
               <div>
-                <label htmlFor="artistImage" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="influenceurImageAdd" className="block text-sm font-medium text-gray-700 mb-1">
                   URL de l'image
                 </label>
                 <input
                   type="text"
-                  id="artistImage"
+                  id="influenceurImageAdd" // ID unique
                   value={newInfluenceur.imageUrl}
                   onChange={(e) => setNewInfluenceur({ ...newInfluenceur, imageUrl: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm" // Style amélioré
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
 
-              <div className="flex space-x-2">
+              {/* Boutons d'action pour le formulaire d'ajout */}
+              <div className="flex space-x-2 pt-2"> {/* Ajout de padding top */}
                 <button
                   onClick={handleAddInfluenceur}
-                  className="px-4 py-2 bg-[#28a745] text-white rounded-md hover:bg-[#218838] transition-colors"
+                  disabled={!newInfluenceur.name || !newInfluenceur.imageUrl} // Désactiver si champs vides
+                  className="px-4 py-2 bg-[#28a745] text-white rounded-md hover:bg-[#218838] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
                   Ajouter
                 </button>
 
                 <button
                   onClick={() => {
-                    setIsAddingInfluenceur(false);
-                    setNewInfluenceur({ name: '', imageUrl: '' });
+                    setIsAddingInfluenceur(false); // Masque le formulaire
+                    setNewInfluenceur({ name: '', imageUrl: '' }); // Réinitialise les champs
                   }}
                   className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
                 >
@@ -141,78 +199,129 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* Tableau listant les influenceurs */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                {/* En-tête : Colonne Influenceur (Nom et Image) */}
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Influenceur
                 </th>
+                 {/* NOUVEAU: En-tête : Colonne URL Image (visible seulement en édition) */}
+                 {editingInfluenceurId && (
+                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                     URL Image
+                   </th>
+                 )}
+                {/* En-tête : Colonne Votes */}
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Votes
                 </th>
+                {/* En-tête : Colonne Actions */}
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
+              {/* Boucle sur la liste des influenceurs pour afficher chaque ligne */}
               {influenceurs.map((influenceur) => (
-                <tr key={influenceur.id}>
+                <tr key={influenceur.id} className={`${editingInfluenceurId === influenceur.id ? 'bg-yellow-50' : ''}`}> {/* Met en surbrillance la ligne en cours d'édition */}
+                  {/* Cellule : Image et Nom */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-full overflow-hidden">
+                      {/* Affiche l'image de l'influenceur */}
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden">
                         <img
                           src={influenceur.imageUrl}
                           alt={influenceur.name}
                           className="h-full w-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40?text=Erreur'; }} // Image de fallback en cas d'erreur
                         />
                       </div>
 
-                      {editingInfluenceurId === influenceur.id ? (
-                        <input
-                          type="text"
-                          value={editInfluenceur?.name || ''}
-                          onChange={(e) => setEditInfluenceur(prev => prev ? { ...prev, name: e.target.value } : null)}
-                          className="px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
-                        />
-                      ) : (
-                        <span className="font-medium text-gray-900">{influenceur.name}</span>
-                      )}
+                      {/* Affiche un champ input pour le nom si en mode édition, sinon affiche le nom */}
+                      <div>
+                        {editingInfluenceurId === influenceur.id ? (
+                          <input
+                            type="text"
+                            value={editInfluenceur?.name || ''}
+                            onChange={(e) => setEditInfluenceur(prev => prev ? { ...prev, name: e.target.value } : null)}
+                            className="px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
+                          />
+                        ) : (
+                          <span className="font-medium text-gray-900">{influenceur.name}</span>
+                        )}
+                      </div>
                     </div>
                   </td>
+
+                  {/* NOUVEAU: Cellule : Champ pour éditer l'URL de l'image (visible seulement en édition) */}
+                  {editingInfluenceurId === influenceur.id && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                       <input
+                         type="text"
+                         value={editInfluenceur?.imageUrl || ''}
+                         onChange={(e) => setEditInfluenceur(prev => prev ? { ...prev, imageUrl: e.target.value } : null)}
+                         className="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
+                         placeholder="URL de l'image"
+                       />
+                     </td>
+                  )}
+                  {/* Si non en édition, ajoute une cellule vide pour garder l'alignement si une autre ligne est en édition */}
+                   {editingInfluenceurId !== null && editingInfluenceurId !== influenceur.id && (
+                    <td className="px-6 py-4 whitespace-nowrap"></td>
+                   )}
+
+
+                  {/* Cellule : Nombre de votes */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-[#6C63FF] bg-opacity-10 text-[#6C63FF]">
-                      {influenceur.voteCount} votes
+                    <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${influenceur.voteCount > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}> {/* Style conditionnel pour les votes */}
+                      {influenceur.voteCount} vote{influenceur.voteCount !== 1 ? 's' : ''} {/* Pluriel correct */}
                     </span>
                   </td>
+
+                  {/* Cellule : Boutons d'actions (Éditer/Supprimer ou Sauvegarder/Annuler) */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {editingInfluenceurId === influenceur.id ? (
-                      <div className="flex justify-end space-x-2">
+                      // Affiche les boutons Sauvegarder et Annuler en mode édition
+                      <div className="flex justify-end items-center space-x-2">
                         <button
                           onClick={handleSaveEdit}
-                          className="text-green-600 hover:text-green-900"
+                          className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-100 transition-colors" // Style amélioré
+                          title="Sauvegarder" // Tooltip
                         >
                           <Save className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => setEditingInfluenceurId(null)}
-                          className="text-red-600 hover:text-red-900"
+                          onClick={() => {
+                            setEditingInfluenceurId(null); // Quitte le mode édition
+                            setEditInfluenceur(null); // Réinitialise les données d'édition
+                          }}
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors" // Style amélioré
+                          title="Annuler" // Tooltip
                         >
                           <X className="h-5 w-5" />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex justify-end space-x-2">
+                      // Affiche les boutons Éditer et Supprimer en mode normal
+                      <div className="flex justify-end items-center space-x-2">
+                        {/* Bouton pour passer en mode édition */}
                         <button
                           onClick={() => handleEditInfluenceur(influenceur)}
-                          className="text-indigo-600 hover:text-indigo-900"
+                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-100 transition-colors" // Style amélioré
+                          title="Modifier" // Tooltip
                         >
                           <Edit className="h-5 w-5" />
                         </button>
+
+                        {/* Bouton pour supprimer l'influenceur */}
                         <button
                           onClick={() => handleDeleteInfluenceur(influenceur.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors" // Style amélioré
+                          title="Supprimer" // Tooltip
                         >
                           <Trash2 className="h-5 w-5" />
                         </button>
@@ -221,6 +330,14 @@ const AdminDashboard: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {/* Ligne affichée si la liste des influenceurs est vide */}
+              {influenceurs.length === 0 && !isAddingInfluenceur && (
+                  <tr>
+                      <td colSpan={editingInfluenceurId ? 4 : 3} className="px-6 py-4 text-center text-gray-500"> {/* Ajuste colSpan dynamiquement */}
+                        Aucun influenceur à afficher. Cliquez sur "Ajouter un Influenceur" pour commencer.
+                      </td>
+                  </tr>
+              )}
             </tbody>
           </table>
         </div>

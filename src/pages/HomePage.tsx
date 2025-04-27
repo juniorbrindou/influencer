@@ -1,5 +1,5 @@
 import React from 'react';
-import InfluenceurCard from '../components/ArtistCard';
+import InfluenceurCard from '../components/InfluenceurCard';
 import VoteModal from '../components/VoteModal';
 import { useVote } from '../context/VoteContext';
 
