@@ -32,7 +32,7 @@ io.on("connection", (socket) => {
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
   try {
-    const influenceurs = await prisma.artist.findMany({
+    const influenceurs = await prisma.influenceurs.findMany({
       include: {
         _count: {
           select: { votes: true },
@@ -77,7 +77,7 @@ app.post("/api/votes", async (req, res) => {
     });
 
     // Récupérer le nouveau compte de votes
-    const updatedInfluenceur = await prisma.influenceur.findUnique({
+    const updatedInfluenceur = await prisma.influenceurs.findUnique({
       where: { id: influenceurId },
       include: {
         _count: {

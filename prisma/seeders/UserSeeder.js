@@ -16,7 +16,7 @@ export async function UserSeeder() {
 
 // On verfifie si l'utilisateur existe déjà dans la base de données avant de l'ajouter 
   for (const user of users) {
-    const existing = await prisma.user.findFirst({
+    const existing = await prisma.users.findFirst({
       where: {
         name: user.name, // Ici on check sur "name"
       },
@@ -24,7 +24,7 @@ export async function UserSeeder() {
 
     // Si l'utilisateur n'existe pas, on l'ajoute
     if (!existing) {
-      await prisma.user.create({
+      await prisma.users.create({
         data: user,
       });
       console.log(`✅ Ajouté : ${user.name}`);

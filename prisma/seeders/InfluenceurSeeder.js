@@ -87,7 +87,7 @@ export async function InfluenceurSeeder() {
 
   // On verfifie si l'influenceur existe déjà dans la base de données avant de l'ajouter 
   for (const influenceur of influenceurs) {
-    const existing = await prisma.influenceur.findFirst({
+    const existing = await prisma.influenceurs.findFirst({
       where: {
         name: influenceur.name, // Ici on check sur "name"
       },
@@ -95,7 +95,7 @@ export async function InfluenceurSeeder() {
 
     // Si l'influenceur n'existe pas, on l'ajoute
     if (!existing) {
-      await prisma.influenceur.create({
+      await prisma.influenceurs.create({
         data: influenceur,
       });
       console.log(`✅ Ajouté : ${influenceur.name}`);

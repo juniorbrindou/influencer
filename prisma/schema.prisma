@@ -6,37 +6,33 @@
 
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["seed"]
   seed = "node prisma/seed.js"
 }
-
-
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Influenceur {
+model Influenceurs {
   id        String   @id @default(uuid())
   name      String
   imageUrl  String
-  votes     Vote[]
-  createdAt DateTime @default(now())
+  votesedAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Votes     Votes[]
 }
 
-model Vote {
-  id          String   @id @default(uuid())
-  influenceurId    String
-  phoneNumber String   @unique
-  timestamp   DateTime @default(now())
-  influenceur      Influenceur   @relation(fields: [influenceurId], references: [id])
+model Votes {
+  id            String       @id @default(uuid())
+  influenceurId String
+  phoneNumber   String       @unique
+  timestamp     DateTime     @default(now())
+  influenceurs  Influenceurs @relation(fields: [influenceurId], references: [id])
 }
 
-
-model User {
-  id    Int    @id @default(autoincrement())
-  name  String
+model Users {
+  id       Int    @id @default(autoincrement())
+  name     String
   password String
 }
