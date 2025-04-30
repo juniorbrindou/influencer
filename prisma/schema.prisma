@@ -20,7 +20,7 @@ model Influenceurs {
   imageUrl  String
   votesedAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  Votes     Votes[]
+  votes     Votes[]
 }
 
 model Votes {
