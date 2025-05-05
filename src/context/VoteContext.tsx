@@ -23,7 +23,7 @@ interface VoteContextType {
 const VoteContext = createContext<VoteContextType | undefined>(undefined);
 
 // Configuration correcte du socket avec les options nécessaires
-const socket = io('http://localhost:3000', {
+const socket = io('', {
   withCredentials: true,
   transports: ['websocket', 'polling'],
   reconnectionAttempts: 5,
@@ -133,7 +133,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const fetchInfluenceurs = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/influenceurs', {
+      const response = await fetch('https://localhost:3000/api/influenceurs', {
         method: 'GET',
         credentials: 'include', // Envoyer les cookies
         headers: {
@@ -224,7 +224,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const addInfluenceur = async (influenceur: Influenceur) => {
     try {
-      const response = await fetch('http://localhost:3000/api/influenceurs', {
+      const response = await fetch('/api/influenceurs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const removeInfluenceur = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/influenceurs/${id}`, {
+      const response = await fetch(`/api/influenceurs/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -271,7 +271,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const updateInfluenceur = async (updatedInfluenceur: Influenceur) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/influenceurs/${updatedInfluenceur.id}`, {
+      const response = await fetch(`/api/influenceurs/${updatedInfluenceur.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -334,7 +334,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const hasVoted = async (phone: string): Promise<boolean> => {
     try {
-      const response = await fetch(`http://localhost:3000/api/votes?phoneNumber=${encodeURIComponent(phone)}`, {
+      const response = await fetch(`/api/votes?phoneNumber=${encodeURIComponent(phone)}`, {
         method: 'GET',
         credentials: 'include'
       });
@@ -368,7 +368,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('Submitting vote for:', selectedInfluenceur.name, 'with phone:', phone);
 
     try {
-      const response = await fetch('http://localhost:3000/api/votes', {
+      const response = await fetch('/api/votes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -404,7 +404,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const requestOTP = async (phone: string) => {
   if (!selectedInfluenceur) return;
 
-  const response = await fetch("http://localhost:3000/api/otp", {
+  const response = await fetch("/api/otp", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -428,7 +428,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   * @throws {Error} Si la requête échoue
  */
 const validateOTP = async (phone: string, otp: string) => {
-  const response = await fetch("http://localhost:3000/api/validate", {
+  const response = await fetch("/api/validate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phoneNumber: phone, otp }),
