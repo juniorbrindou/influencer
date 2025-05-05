@@ -325,7 +325,7 @@ app.post("/api/validate", async (req, res) => {
 });
 
 // Démarrer le serveur HTTP (pas app.listen)
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
