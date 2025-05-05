@@ -133,7 +133,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const fetchInfluenceurs = async () => {
     try {
-      const response = await fetch('https://localhost:3000/api/influenceurs', {
+      const response = await fetch('/api/influenceurs', {
         method: 'GET',
         credentials: 'include', // Envoyer les cookies
         headers: {
