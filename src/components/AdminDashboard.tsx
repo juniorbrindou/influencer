@@ -40,10 +40,10 @@ const AdminDashboard: React.FC = () => {
 
     // Appelle la fonction pour ajouter l'influenceur via le contexte
     addInfluenceur({
-      id: '', // L'ID sera probablement généré côté backend ou par le contexte lui-même
+      id: '',
       name: newInfluenceur.name,
       imageUrl: newInfluenceur.imageUrl,
-      voteCount: 0 // Un nouvel influenceur commence avec 0 vote
+      voteCount: 0
     });
 
     // Réinitialise les champs du formulaire d'ajout
@@ -225,23 +225,18 @@ const AdminDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {/* Boucle sur la liste des influenceurs pour afficher chaque ligne */}
               {influenceurs.map((influenceur) => (
-                <tr key={influenceur.id} className={`${editingInfluenceurId === influenceur.id ? 'bg-yellow-50' : ''}`}> {/* Met en surbrillance la ligne en cours d'édition */}
-                  {/* Cellule : Image et Nom */}
+                <tr key={influenceur.id} className={`${editingInfluenceurId === influenceur.id ? 'bg-yellow-50' : ''}`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-3">
-                      {/* Affiche l'image de l'influenceur */}
                       <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden">
                         <img
                           src={influenceur.imageUrl}
                           alt={influenceur.name}
                           className="h-full w-full object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40?text=Erreur'; }} // Image de fallback en cas d'erreur
+                          onError={(e) => { (e.target as HTMLImageElement).src = "/fallback.png" as string; }}
                         />
                       </div>
-
-                      {/* Affiche un champ input pour le nom si en mode édition, sinon affiche le nom */}
                       <div>
                         {editingInfluenceurId === influenceur.id ? (
                           <input
@@ -256,8 +251,6 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                   </td>
-
-                  {/* NOUVEAU: Cellule : Champ pour éditer l'URL de l'image (visible seulement en édition) */}
                   {editingInfluenceurId === influenceur.id && (
                       <td className="px-6 py-4 whitespace-nowrap">
                        <input
@@ -269,60 +262,48 @@ const AdminDashboard: React.FC = () => {
                        />
                      </td>
                   )}
-                  {/* Si non en édition, ajoute une cellule vide pour garder l'alignement si une autre ligne est en édition */}
                    {editingInfluenceurId !== null && editingInfluenceurId !== influenceur.id && (
                     <td className="px-6 py-4 whitespace-nowrap"></td>
                    )}
-
-
-                  {/* Cellule : Nombre de votes */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${influenceur.voteCount > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}> {/* Style conditionnel pour les votes */}
-                      {influenceur.voteCount} vote{influenceur.voteCount !== 1 ? 's' : ''} {/* Pluriel correct */}
+                    <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${influenceur.voteCount > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {influenceur.voteCount} vote{influenceur.voteCount !== 1 ? 's' : ''}
                     </span>
                   </td>
-
-                  {/* Cellule : Boutons d'actions (Éditer/Supprimer ou Sauvegarder/Annuler) */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {editingInfluenceurId === influenceur.id ? (
-                      // Affiche les boutons Sauvegarder et Annuler en mode édition
                       <div className="flex justify-end items-center space-x-2">
                         <button
                           onClick={handleSaveEdit}
-                          className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-100 transition-colors" // Style amélioré
-                          title="Sauvegarder" // Tooltip
+                          className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-100 transition-colors"
+                          title="Sauvegarder"
                         >
                           <Save className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => {
-                            setEditingInfluenceurId(null); // Quitte le mode édition
-                            setEditInfluenceur(null); // Réinitialise les données d'édition
+                            setEditingInfluenceurId(null);
+                            setEditInfluenceur(null);
                           }}
-                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors" // Style amélioré
-                          title="Annuler" // Tooltip
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors"
+                          title="Annuler"
                         >
                           <X className="h-5 w-5" />
                         </button>
                       </div>
                     ) : (
-                      // Affiche les boutons Éditer et Supprimer en mode normal
                       <div className="flex justify-end items-center space-x-2">
-                        {/* Bouton pour passer en mode édition */}
                         <button
                           onClick={() => handleEditInfluenceur(influenceur)}
                           className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-100 transition-colors" // Style amélioré
-                          title="Modifier" // Tooltip
+                          title="Modifier"
                         >
                           <Edit className="h-5 w-5" />
                         </button>
-
-                        {/* Bouton pour supprimer l'influenceur */}
                         <button
                           onClick={() => handleDeleteInfluenceur(influenceur.id)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors" // Style amélioré
-                          title="Supprimer" // Tooltip
-                        >
+                          className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors"
+                          title="Supprimer">
                           <Trash2 className="h-5 w-5" />
                         </button>
                       </div>

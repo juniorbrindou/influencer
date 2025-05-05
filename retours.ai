@@ -1,0 +1,234 @@
+//quelques requêtes Prisma communes que vous pourriez utiliser avec ce schéma:
+
+
+// Importer le client Prisma
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+// Obtenir tous les influenceurs actifs avec leur nombre de votes
+async function getActiveInfluencers() {
+  const influencers = await prisma.influencer.findMany({
+    where: { active: true },
+    orderBy: { voteCount: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      imageUrl: true,
+      description: true,
+      voteCount: true,
+    }
+  });
+  return influencers;
+}
+
+// Vérifier si un numéro de téléphone a déjà voté
+async function hasUserVoted(phoneNumber) {
+  const vote = await prisma.vote.findUnique({
+    where: { phoneNumber }
+  });
+  return !!vote;
+}
+
+// Enregistrer un nouveau vote
+async function registerVote(influencerId, phoneNumber, userAgent = null, ipAddress = null) {
+  // Transaction pour assurer la cohérence des données
+  return prisma.$transaction(async (tx) => {
+    // Vérifier si le téléphone a déjà voté
+    const existingVote = await tx.vote.findUnique({
+      where: { phoneNumber },
+    });
+    
+    if (existingVote) {
+      throw new Error('Ce numéro de téléphone a déjà voté.');
+    }
+    
+    // Créer le vote
+    const vote = await tx.vote.create({
+      data: {
+        influencerId,
+        phoneNumber,
+        userAgent,
+        ipAddress,
+      },
+    });
+    
+    // Mettre à jour le compteur de votes de l'influenceur
+    await tx.influencer.update({
+      where: { id: influencerId },
+      data: { voteCount: { increment: 1 } },
+    });
+    
+    // Mettre à jour les statistiques globales
+    await tx.stats.update({
+      where: { id: '1' }, // Supposons qu'il y a un enregistrement unique pour les stats
+      data: { 
+        totalVotes: { increment: 1 },
+        uniqueVoters: { increment: 1 },
+        lastUpdated: new Date()
+      },
+    });
+    
+    return vote;
+  });
+}
+
+// Obtenir les résultats pour le tableau de bord
+async function getDashboardStats() {
+  const [influencers, stats] = await Promise.all([
+    prisma.influencer.findMany({
+      where: { active: true },
+      orderBy: { voteCount: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,
+        voteCount: true,
+      }
+    }),
+    prisma.stats.findFirst()
+  ]);
+  
+  return {
+    influencers,
+    totalVotes: stats?.totalVotes || 0,
+    uniqueVoters: stats?.uniqueVoters || 0,
+    lastUpdated: stats?.lastUpdated || new Date()
+  };
+}
+
+// Authentification admin
+async function authenticateUser(username, password) {
+  // Note: Dans un environnement de production, utilisez bcrypt pour comparer les mots de passe hachés
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      password: true // À remplacer par une vérification sécurisée en production
+    }
+  });
+  
+  if (!user || user.password !== password) { // Comparaison directe à remplacer par bcrypt.compare
+    return null;
+  }
+  
+  // Ne pas renvoyer le mot de passe
+  const { password: _, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+}
+
+// Seeder pour initialiser la base de données (peut être utilisé dans prisma/seed.js)
+async function seed() {
+  // Créer un utilisateur admin par défaut
+  await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: {},
+    create: {
+      username: 'admin',
+      password: 'adminSecurePassword', // À remplacer par un hash dans un environnement réel
+      role: 'ADMIN'
+    }
+  });
+  
+  // Créer l'enregistrement unique pour les statistiques
+  await prisma.stats.upsert({
+    where: { id: '1' },
+    update: {},
+    create: {
+      id: '1',
+      totalVotes: 0,
+      uniqueVoters: 0,
+      dailyVotes: {}
+    }
+  });
+  
+  // Ajouter quelques influenceurs d'exemple
+  const influencers = [
+    { name: 'Influencer 1', imageUrl: '/images/influencer1.jpg', description: 'Description de l\'influenceur 1' },
+    { name: 'Influencer 2', imageUrl: '/images/influencer2.jpg', description: 'Description de l\'influenceur 2' },
+    { name: 'Influencer 3', imageUrl: '/images/influencer3.jpg', description: 'Description de l\'influenceur 3' },
+  ];
+  
+  for (const influencer of influencers) {
+    await prisma.influencer.upsert({
+      where: { name: influencer.name },
+      update: {},
+      create: influencer
+    });
+  }
+}
+
+module.exports = {
+  getActiveInfluencers,
+  hasUserVoted,
+  registerVote,
+  getDashboardStats,
+  authenticateUser,
+  seed
+};
+
+-----------------------------------------------------------------------
+
+------------------schema prisma de claude------------------------------
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  seed     = "node prisma/seed.js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Influencer {
+  id          String   @id @default(uuid())
+  name        String
+  imageUrl    String
+  description String?   // Une courte description optionnelle
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  active      Boolean  @default(true)  // Pour désactiver temporairement un influenceur
+  voteCount   Int      @default(0)     // Compteur rapide pour les classements
+  votes       Vote[]
+}
+
+model Vote {
+  id           String     @id @default(uuid())
+  influencerId String
+  phoneNumber  String     @unique
+  userAgent    String?    // Pour des statistiques sur les appareils utilisés
+  ipAddress    String?    // Pour des vérifications supplémentaires si nécessaire
+  createdAt    DateTime   @default(now())
+  influencer   Influencer @relation(fields: [influencerId], references: [id])
+
+  @@index([influencerId])
+  @@index([phoneNumber])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Stats {
+  id            String   @id @default(uuid())
+  totalVotes    Int      @default(0)
+  uniqueVoters  Int      @default(0)
+  lastUpdated   DateTime @default(now())
+  dailyVotes    Json?    // Stockage des votes quotidiens au format JSON
+}

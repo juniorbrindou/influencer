@@ -27,6 +27,8 @@ model Votes {
   id            String       @id @default(uuid())
   influenceurId String
   phoneNumber   String       @unique
+  otp           String
+  isValidated     Boolean      @default(false)
   timestamp     DateTime     @default(now())
   influenceurs  Influenceurs @relation(fields: [influenceurId], references: [id])
 }

@@ -11,7 +11,8 @@ const VoteModal: React.FC = () => {
     setPhoneNumber, // La fonction pour mettre à jour le numéro de téléphone dans le contexte
     submitVote, // La fonction pour soumettre le vote
     resetSelection, // La fonction pour fermer la modale et réinitialiser la sélection
-    hasVoted // La fonction pour vérifier si un numéro a déjà voté
+    hasVoted,// La fonction pour vérifier si un numéro a déjà voté
+    requestOTP, // La fonction pour demander un code OTP (One Time Password)
   } = useVote();
 
   // États locaux pour gérer le formulaire

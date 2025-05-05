@@ -17,7 +17,7 @@ const AdminPage: React.FC = () => {
               Gérez les influenceurs et consultez les statistiques de vote.
             </p>
           </div>
-          
+
           <AdminDashboard />
         </>
       )}
