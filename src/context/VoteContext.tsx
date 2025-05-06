@@ -26,8 +26,9 @@ const VoteContext = createContext<VoteContextType | undefined>(undefined);
 
 // Configuration du socket adaptée au serveur
 const socket = io('http://localhost:4000', {
+  transports: ['websocket'],
   withCredentials: true,
-  transports: ['websocket', 'polling'],
+  reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000
 });
@@ -160,7 +161,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const fetchInfluenceurs = async () => {
     try {
-      const response = await fetch('/api/influenceurs', {
+      const response = await fetch('http://localhost:4000/api/influenceurs', {
         method: 'GET',
         credentials: 'include', // Envoyer les cookies
         headers: {
@@ -232,7 +233,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addInfluenceur = async (influenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/influenceurs', {
+      const response = await fetch('http://localhost:4000/api/influenceurs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,7 +266,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const removeInfluenceur = async (id: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/influenceurs/${id}`, {
+      const response = await fetch(`http://localhost:4000/api/influenceurs/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -294,7 +295,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateInfluenceur = async (updatedInfluenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/influenceurs/${updatedInfluenceur.id}`, {
+      const response = await fetch(`http://localhost:4000/api/influenceurs/${updatedInfluenceur.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
