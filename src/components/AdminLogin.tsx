@@ -2,8 +2,6 @@
 import React, { useState } from 'react';
 // Importe l'icône Lock depuis la bibliothèque lucide-react
 import { Lock } from 'lucide-react';
-// Importe les identifiants de l'administrateur depuis un fichier de données (attention: pour démo seulement, ne pas stocker en dur dans une vraie app)
-import { adminCredentials } from '../data/influenceurs';
 
 /**
  * Interface définissant les props attendues par le composant AdminLogin.
@@ -15,6 +13,11 @@ interface AdminLoginProps {
    */
   onLogin: () => void;
 }
+
+const adminCredentials = {
+  username: 'admin',
+  password: 'password123'
+};
 
 /**
  * Composant AdminLogin : Affiche un formulaire de connexion pour l'espace administrateur.

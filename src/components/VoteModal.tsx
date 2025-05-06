@@ -11,7 +11,6 @@ const VoteModal: React.FC = () => {
     setPhoneNumber, // La fonction pour mettre à jour le numéro de téléphone dans le contexte
     submitVote, // La fonction pour soumettre le vote
     resetSelection, // La fonction pour fermer la modale et réinitialiser la sélection
-    hasVoted,// La fonction pour vérifier si un numéro a déjà voté
     requestOTP, // La fonction pour demander un code OTP (One Time Password)
   } = useVote();
 
@@ -39,7 +38,7 @@ const VoteModal: React.FC = () => {
     }
 
     // Vérifie si le numéro a déjà voté
-    if (await hasVoted(phoneNumber)) {
+    if (await requestOTP(selectedInfluenceur, phoneNumber)) {
       setError('Vous avez déjà voté avec ce numéro');
       return; // Arrête l'exécution si le numéro a déjà voté
     }
@@ -57,7 +56,7 @@ const VoteModal: React.FC = () => {
     // Validation du code de vérification (doit être 6 chiffres)
     if (verificationCode.length === 6 && /^\d+$/.test(verificationCode)) {
       // Appel de la fonction de soumission du vote (du contexte)
-      submitVote(phoneNumber);
+      submitVote(selectedInfluenceur, phoneNumber);
 
       // Redirige vers la page de confirmation après un délai
       // Ce délai simule potentiellement une action asynchrone ou permet de voir l'état de soumission

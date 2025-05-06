@@ -25,12 +25,13 @@ model Influenceurs {
 
 model Votes {
   id            String       @id @default(uuid())
-  influenceurId String
-  phoneNumber   String       @unique
+  influenceurId String?
+  phoneNumber   String
   otp           String
+  otpExpiresAt DateTime
   isValidated     Boolean      @default(false)
   timestamp     DateTime     @default(now())
-  influenceurs  Influenceurs @relation(fields: [influenceurId], references: [id])
+  influenceurs  Influenceurs? @relation(fields: [influenceurId], references: [id])
 }
 
 model Users {

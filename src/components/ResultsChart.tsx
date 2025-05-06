@@ -31,14 +31,6 @@ const ResultsChart: React.FC = () => {
   }, [listInfluenceurs]); // Dépendance à listInfluenceurs : l'effet s'exécute lorsque cette liste change
 
 
-//   useEffect(() => {
-//   const sorted = [...listInfluenceurs].sort((a, b) => b.voteCount - a.voteCount);
-//   setSortedInfluenceurs(sorted);
-//   setTimeout(() => {
-//     setAnimatedBars(true);
-//   }, 300);
-// }, [listInfluenceurs]);
-
   // Rendu du composant
   return (
     // Conteneur principal avec styles Tailwind CSS

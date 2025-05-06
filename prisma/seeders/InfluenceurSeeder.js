@@ -13,13 +13,13 @@ export async function InfluenceurSeeder() {
       {
         name: "Jean Michel ONNIN",
         imageUrl:
-          "https://scontent.fabj2-1.fna.fbcdn.net/v/t39.30808-6/321971571_556278652753819_7172227098506846649_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGLnakWWZrsXZ9FqwrNEF9or2a0Rc4fe0mvZrRFzh97SevAFGHuPUfYAY25UMta7XpM2JsU0rrWSCht4DwQEI4x&_nc_ohc=WYwUrr4iSD8Q7kNvwF8IxiE&_nc_oc=AdkcBwv8IygY3Bb701HBR1eIOa_s5LzLcI2BVZlBK238E2LRePLGXZBBSfV6shYIM1s&_nc_zt=23&_nc_ht=scontent.fabj2-1.fna&_nc_gid=bcB67O5OMwGrx4g1gqshTA&oh=00_AfFyxCQIDi8d2NgRhPhWzboiQVqiFwms6XfhErWvpv8xWg&oe=6811A51F",
+          "https://th.bing.com/th/id/R.382c0929b5f5becfd795422882a9d337?rik=vKXI4y3jT2h7KQ&riu=http%3a%2f%2fwww.radiojam.biz%2fupload%2fgalerie%2fNews%2fArchive+2018%2f4-Onin.jpg&ehk=MhRb%2fNXuTJFx76OV6KwhK%2fbaUdV28CBFwOr19azWdW8%3d&risl=&pid=ImgRaw&r=0",
         // voteCount: 125,
       },
       {
-        name: "Lala Fatima Haidara (La gouteuse)",
+        name: "braising girl",
         imageUrl:
-          "https://scontent.fabj2-1.fna.fbcdn.net/v/t39.30808-6/345475120_623989789746921_6838809150239647602_n.jpg?_nc_cat=101&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHXtUXR9Da8PZ-1fK5UQpTsYqL6PMB8EMFiovo8wHwQwXQZOgbmYCmjmdZ389dGUOVvzc3YE-zzYy3E8Ezrbr2K&_nc_ohc=kiwGWkaX_fQQ7kNvwELDDS9&_nc_oc=Adk21-ZaTcm84VI40eROuzkIJ4ldiPB_mIVU70DKfInW77XyJ-0a6VzhMx3WxN87t3o&_nc_zt=23&_nc_ht=scontent.fabj2-1.fna&_nc_gid=GrN0qPw39Ajd5Q6xhhT_pg&oh=00_AfFXYVHCtToXpRjvT9xvs1q_Ry-r0DWRd1fgcpbRhM12Ow&oe=68118F3F",
+          "https://th.bing.com/th/id/OIP.-TEMltSe7prF89IgnBzdwgAAAA?w=288&h=180&c=7&r=0&o=7&cb=iwp1&pid=1.7&rm=3",
         // voteCount: 220,
       },
       {
@@ -31,7 +31,7 @@ export async function InfluenceurSeeder() {
       {
         name: "Paul Yves Ettien",
         imageUrl:
-          "https://scontent.fabj2-1.fna.fbcdn.net/v/t39.30808-6/368822965_880323576824041_9050352684898834596_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeGeAQU_xoHkRZRtnJvt63gjj-IxlkuSO0WP4jGWS5I7Rfp7O4hUNn1ozVRBlCPDNI22eWz_W5opaQNzB18XeHxK&_nc_ohc=PaMnUSXcgcwQ7kNvwEz9esj&_nc_oc=AdnWRY4HzLQmVPgeF76GxmXSgBphxDbnfU2hR-R23nf5LAS9d9HWRz_L8Dm4RBQXiCI&_nc_zt=23&_nc_ht=scontent.fabj2-1.fna&_nc_gid=xFMnyDAGViDBYktSl_whcg&oh=00_AfHZHRiBPXlWTOVzfRyOWVIZu8J4lsmJs3XA4iaF54e3pQ&oe=68119051",
+          "https://th.bing.com/th/id/OIP.DA3TxuY5PQitxRlFypNgLgHaJQ?cb=iwp1&rs=1&pid=ImgDetMain",
         // voteCount: 175,
       },
       {
@@ -55,7 +55,7 @@ export async function InfluenceurSeeder() {
       {
         name: "Kevine Obin",
         imageUrl:
-          "https://kessiya.com/wp-content/uploads/2023/07/08D7D64D-D09E-45CE-AD51-E889566DD509-750x939.jpeg",
+          "https://yop.l-frii.com/wp-content/uploads/2024/03/WhatsApp-Image-2024-03-18-at-15.24.40.jpeg",
         // voteCount: 128,
       },
       {
