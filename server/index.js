@@ -15,8 +15,7 @@ const httpServer = createServer(app);
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
-    origin:'https://influenceur2lannee.com',
-    // origin: "http://localhost:5173",
+    origin: ['http://localhost:5173', 'https://influenceur2lannee.com'],
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
