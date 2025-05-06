@@ -4,7 +4,6 @@ import { PrismaClient } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
-import axios from "axios";
 
 dotenv.config();
 
@@ -131,7 +130,6 @@ io.on("connection", (socket) => {
           } pour ${phoneNumber}: ${otpToSend}`
         );
         socket.emit("otpSent", otpToSend);
-      await sendViaGateway(phoneNumber, otpToSend); // Envoi de l'OTP via WhatsApp
         socket.emit("otpResponse", { hasVoted: false , otp: otpToSend });
         return;
       }
@@ -151,7 +149,6 @@ io.on("connection", (socket) => {
 
       console.log(`📲 Nouvel OTP pour ${phoneNumber}: ${newOtp}`);
       socket.emit("otpSent", newOtp);
-      await sendViaGateway(phoneNumber, newOtp); // Envoi de l'OTP via WhatsApp
       socket.emit("otpResponse", { hasVoted: false , otp: newOtp });
       return;
     } catch (err) {
@@ -200,12 +197,6 @@ io.on("connection", (socket) => {
   });
 });
 
-const sendViaGateway = async (phone, otp) => {
-  await axios.get(
-    `https://api.whatsapp.com/send?phone=+225${phone}&text=Code OTP: ${otp}`
-  );
-  console.log(`📲 OTP envoyé à ${phone}: ${otp}`);
-};
 
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
