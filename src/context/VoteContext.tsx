@@ -25,7 +25,7 @@ interface VoteContextType {
 const VoteContext = createContext<VoteContextType | undefined>(undefined);
 
 // Configuration du socket adaptée au serveur
-const socket = io('https://influenceur2lannee.com', {
+const socket = io('http://localhost:4000', {
   withCredentials: true,
   transports: ['websocket', 'polling'],
   reconnectionAttempts: 5,
