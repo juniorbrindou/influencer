@@ -7,8 +7,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🚀 Démarrage du seeding...');
 
-  await InfluenceurSeeder();
-  await UserSeeder();
+  // await InfluenceurSeeder();
+  // await UserSeeder();
 //   await seedVotes();
 
   console.log('✅ Seeding terminé !');
