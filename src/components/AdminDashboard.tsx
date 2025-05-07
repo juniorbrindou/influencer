@@ -3,6 +3,7 @@ import { PlusCircle, Edit, Trash2, Save, X } from 'lucide-react';
 import { Category, Influenceur } from '../types';
 import { useVote } from '../context/useVote';
 import { useCategoryManager } from '../context/useCartegoryManager';
+import { ExclamationTriangleIcon } from '@heroicons/react/16/solid';
 
 /**
  * Composant AdminDashboard pour gérer les influenceurs et afficher les statistiques de vote.
@@ -13,9 +14,9 @@ const AdminDashboard: React.FC = () => {
 
   const [isAddingInfluenceur, setIsAddingInfluenceur] = useState(false);
   const [editingInfluenceurId, setEditingInfluenceurId] = useState<string | null>(null);
-  const [newInfluenceur, setNewInfluenceur] = useState<Partial<Influenceur & { imageUrl: string | File }>>({
+  const [newInfluenceur, setNewInfluenceur] = useState<Partial<Influenceur & { imageUrl: string | File | undefined }>>({
     name: '',
-    imageUrl: ''
+    imageUrl: undefined
   });
   // État pour stocker les données de l'influenceur en cours d'édition
   const [editInfluenceur, setEditInfluenceur] = useState<Influenceur | null>(null);
@@ -137,23 +138,28 @@ const AdminDashboard: React.FC = () => {
    * Appelle la fonction addInfluenceur du contexte.
    * Réinitialise le formulaire et masque le formulaire d'ajout.
    */
-  const handleAddInfluenceur = () => {
-    // Vérification simple : si le nom ou l'imageUrl est vide, on ne fait rien
-    if (!newInfluenceur.name || !newInfluenceur.imageUrl) return;
+  const handleAddInfluenceur = async () => {
+    if (!newInfluenceur.name || !newInfluenceur.imageUrl || !selectedCategory) return;
 
-    // Appelle la fonction pour ajouter l'influenceur via le contexte
-    addInfluenceur({
-      id: '',
-      name: newInfluenceur.name,
-      imageUrl: newInfluenceur.imageUrl,
-      voteCount: 0,
-      categoryId: ''
-    });
+    try {
+      let imageUrl = newInfluenceur.imageUrl;
+      if (newInfluenceur.imageUrl) {
+        imageUrl = await uploadImage(newInfluenceur.imageUrl as File);
+      }
 
-    // Réinitialise les champs du formulaire d'ajout
-    setNewInfluenceur({ name: '', imageUrl: '' });
-    // Masque le formulaire d'ajout
-    setIsAddingInfluenceur(false);
+      await addInfluenceur({
+        id: '',
+        name: newInfluenceur.name,
+        imageUrl: imageUrl as string,
+        voteCount: 0,
+        categoryId: selectedCategory // Utilise directement la catégorie sélectionnée
+      });
+
+      setNewInfluenceur({ name: '', imageUrl: '' });
+      setIsAddingInfluenceur(false);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de l\'influenceur:', error);
+    }
   };
 
   /**
@@ -408,16 +414,20 @@ const AdminDashboard: React.FC = () => {
 
 
       {/* Section Gestion des Influenceurs */}
-      {/* Section Gestion des Influenceurs */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800">Gestion des influenceurs</h2>
           <button
             onClick={() => {
               setIsAddingInfluenceur(!isAddingInfluenceur);
-              setNewInfluenceur({ name: '', imageUrl: '' });
+              setNewInfluenceur({
+                name: '',
+                imageUrl: '',
+                categoryId: selectedCategory || ''
+              });
             }}
             className="px-4 py-2 bg-[#6C63FF] text-white rounded-md hover:bg-[#5a52e0] transition-colors flex items-center"
+            disabled={!selectedCategory}
           >
             {isAddingInfluenceur ? (
               <>
@@ -438,66 +448,109 @@ const AdminDashboard: React.FC = () => {
           <div className="mb-6 p-4 border border-gray-200 rounded-lg">
             <h3 className="text-lg font-medium mb-3 text-gray-700">Nouvel Influenceur</h3>
 
-            <div className="space-y-4">
-              {/* Champ : Nom de l'influenceur */}
-              <div>
-                <label htmlFor="influenceurNameAdd" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom de l'influenceur
-                </label>
-                <input
-                  type="text"
-                  id="influenceurNameAdd"
-                  value={newInfluenceur.name || ''}
-                  onChange={(e) => setNewInfluenceur({ ...newInfluenceur, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm"
-                  placeholder="Nom complet"
-                />
-              </div>
-
-              {/* Champ : Image de l'influenceur */}
-              <div>
-                <label htmlFor="influenceurImageAdd" className="block text-sm font-medium text-gray-700 mb-1">
-                  Image de l'influenceur
-                </label>
-                <input
-                  type="file"
-                  id="influenceurImageAdd"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setNewInfluenceur({ ...newInfluenceur, imageUrl: e.target.files[0] as unknown as string | File });
-                    }
-                  }}
-                  className="w-full mb-2"
-                />
-                {/* Prévisualisation de l'image */}
-                {newInfluenceur.imageUrl && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-600 mb-1">Prévisualisation :</p>
-                    <div className="w-32 h-32 border border-gray-300 rounded-md overflow-hidden">
-                      <img
-                        src={newInfluenceur.imageUrl instanceof File
-                          ? URL.createObjectURL(newInfluenceur.imageUrl)
-                          : newInfluenceur.imageUrl}
-                        alt="Prévisualisation"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+            {!selectedCategory ? (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
                   </div>
-                )}
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      Veuillez sélectionner une catégorie dans le filtre avant d'ajouter un influenceur.
+                    </p>
+                  </div>
+                </div>
               </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Afficher la catégorie sélectionnée */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Catégorie
+                  </label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-md">
+                    {categories.find(c => c.id === selectedCategory)?.name || 'Catégorie sélectionnée'}
+                  </div>
+                </div>
 
-              {/* Bouton de soumission */}
-              <button
-                onClick={() => {
-                  handleAddInfluenceur();
-                  setIsAddingInfluenceur(false);
-                }}
-                disabled={!newInfluenceur.name || !newInfluenceur.imageUrl}
-                className="px-4 py-2 bg-[#28a745] text-white rounded-md hover:bg-[#218838] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                Ajouter l'influenceur
-              </button>
-            </div>
+                {/* Champ : Nom de l'influenceur */}
+                <div>
+                  <label htmlFor="influenceurNameAdd" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nom de l'influenceur
+                  </label>
+                  <input
+                    type="text"
+                    id="influenceurNameAdd"
+                    value={newInfluenceur.name || ''}
+                    onChange={(e) => setNewInfluenceur({ ...newInfluenceur, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm"
+                    placeholder="Nom complet"
+                  />
+                </div>
+
+                {/* Champ : Catégorie (pré-rempli avec la sélection du filtre) */}
+                {/* <div>
+                  <label htmlFor="influenceurCategoryAdd" className="block text-sm font-medium text-gray-700 mb-1">
+                    Catégorie
+                  </label>
+                  <select
+                    id="influenceurCategoryAdd"
+                    value={newInfluenceur.categoryId || selectedCategory || ''}
+                    onChange={(e) => setNewInfluenceur({ ...newInfluenceur, categoryId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm"
+                    required
+                  >
+                    <option value="">Sélectionnez une catégorie</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                </div> */}
+
+                {/* Champ : Image de l'influenceur */}
+                <div>
+                  <label htmlFor="influenceurImageAdd" className="block text-sm font-medium text-gray-700 mb-1">
+                    Image de l'influenceur
+                  </label>
+                  <input
+                    type="file"
+                    id="influenceurImageAdd"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setNewInfluenceur({ ...newInfluenceur, imageUrl: e.target.files[0] as string | File});
+                      }
+                    }}
+                    className="w-full mb-2"
+                    accept="image/*"
+                  />
+                  {/* Prévisualisation de l'image */}
+                  {newInfluenceur.imageUrl && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-600 mb-1">Prévisualisation :</p>
+                      <div className="w-32 h-32 border border-gray-300 rounded-md overflow-hidden">
+                        <img
+                          src={newInfluenceur.imageUrl instanceof File ? URL.createObjectURL(newInfluenceur.imageUrl) : newInfluenceur.imageUrl}
+                          alt="Prévisualisation"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bouton de soumission */}
+                <button
+                  onClick={() => {
+                    handleAddInfluenceur();
+                    setIsAddingInfluenceur(false);
+                  }}
+                  disabled={!newInfluenceur.name || !newInfluenceur.imageUrl || !newInfluenceur.categoryId}
+                  className="px-4 py-2 bg-[#28a745] text-white rounded-md hover:bg-[#218838] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  Ajouter l'influenceur
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -561,7 +614,7 @@ const AdminDashboard: React.FC = () => {
                         {influenceur.imageUrl && (
                           <div className="w-10 h-10 rounded-full overflow-hidden">
                             <img
-                              src={influenceur.imageUrl}
+                              src={influenceur.imageUrl instanceof File ? URL.createObjectURL(influenceur.imageUrl) : influenceur.imageUrl}
                               alt={influenceur.name}
                               className="w-full h-full object-cover"
                             />

@@ -1,7 +1,7 @@
 export interface Influenceur {
   id: string;
   name: string;
-  imageUrl: string;
+  imageUrl: string | File;
   categoryId: string;
   category?: Category;
   voteCount: number;

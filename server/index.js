@@ -29,7 +29,6 @@ const storage = multer.diskStorage({
   },
 });
 
-
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
@@ -51,18 +50,17 @@ app.use(express.json());
 
 const upload = multer({ storage });
 
-
-app.post('/api/upload', upload.single('image'), (req, res) => {
+app.post("/api/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: 'Aucun fichier téléchargé' });
+    return res.status(400).json({ error: "Aucun fichier téléchargé" });
   }
-  
+
   const imageUrl = `/uploads/${req.file.filename}`;
   res.json({ imageUrl });
 });
 
 // Servir les fichiers statiques
-app.use('/uploads', express.static('public/uploads'));
+app.use("/uploads", express.static("public/uploads"));
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
@@ -346,9 +344,10 @@ app.get("/api/influenceurs", async (req, res) => {
       include: {
         votes: {
           where: {
-            isValidated: true, // 👈 on filtre ici
+            isValidated: true,
           },
         },
+        category: true, // Inclure les données de la catégorie
       },
     });
 
@@ -356,7 +355,9 @@ app.get("/api/influenceurs", async (req, res) => {
       id: influenceur.id,
       name: influenceur.name,
       imageUrl: influenceur.imageUrl,
-      voteCount: influenceur.votes.length, // 👈 ici c'est que les validés maintenant
+      voteCount: influenceur.votes.length,
+      categoryId: influenceur.categoryId,
+      category: influenceur.category, // Inclure les données de la catégorie
     }));
 
     res.json(influenceursWithVoteCount);
@@ -415,16 +416,25 @@ app.delete("/api/influenceurs/:id", async (req, res) => {
  * @throws {500} - Erreur serveur lors de la création de l'influenceur
  */
 app.post("/api/influenceurs", async (req, res) => {
-  const { name, imageUrl } = req.body;
+  const { name, imageUrl, categoryId } = req.body;
 
   // Vérification des données envoyées
-  if (!name || !imageUrl) {
+  if (!name || !imageUrl || !categoryId) {
     return res
       .status(400)
-      .json({ error: "Le nom et l'image de l'influenceur sont requis" });
+      .json({ error: "Le nom, l'image et la catégorie de l'influenceur sont requis" });
   }
 
   try {
+    // Vérifier si la catégorie existe
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      return res.status(404).json({ error: "Catégorie non trouvée" });
+    }
+
     // Vérifier si l'influenceur existe déjà
     const existingInfluenceur = await prisma.influenceurs.findFirst({
       where: { name: name },
@@ -439,6 +449,7 @@ app.post("/api/influenceurs", async (req, res) => {
       data: {
         name,
         imageUrl,
+        categoryId,
       },
     });
 

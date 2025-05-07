@@ -20,22 +20,45 @@ export const useInfluenceurManager = () => {
   const addInfluenceur = async (influenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      // Logique d'ajout côté API
-      const response = await fetch(SOCKET_URL+`/api/influenceurs`, {
+
+      // Si imageUrl est un File, on l'upload d'abord
+      let finalImageUrl = influenceur.imageUrl;
+      if (influenceur.imageUrl) {
+        const formData = new FormData();
+        formData.append('image', influenceur.imageUrl);
+
+        const uploadResponse = await fetch(SOCKET_URL + '/api/upload', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Erreur lors de l\'upload de l\'image');
+        }
+
+        const uploadData = await uploadResponse.json();
+        finalImageUrl = uploadData.imageUrl;
+      }
+
+      // Ensuite on crée l'influenceur avec l'URL de l'image
+      const response = await fetch(SOCKET_URL + `/api/influenceurs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(influenceur),
+        body: JSON.stringify({
+          ...influenceur,
+          imageUrl: finalImageUrl,
+          categoryId: influenceur.categoryId
+        }),
       });
 
       if (!response.ok) {
         throw new Error('Erreur lors de l\'ajout');
       }
 
-      // Réponse de l'API
       const data = await response.json();
-      socket.emit("addInfluenceur", data); // Émettre l'événement via WebSocket
-
+      socket.emit("addInfluenceur", data);
       setIsLoading(false);
     } catch (err) {
       setIsLoading(false);
@@ -48,7 +71,7 @@ export const useInfluenceurManager = () => {
   const removeInfluenceur = async (id: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(SOCKET_URL+`/api/influenceurs/${id}`, {
+      const response = await fetch(SOCKET_URL + `/api/influenceurs/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -71,7 +94,7 @@ export const useInfluenceurManager = () => {
   const updateInfluenceur = async (influenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch(SOCKET_URL+`/api/influenceurs/${influenceur.id}`, {
+      const response = await fetch(SOCKET_URL + `/api/influenceurs/${influenceur.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -96,7 +119,7 @@ export const useInfluenceurManager = () => {
   // Fonction pour récupérer les influenceurs
   const fetchInfluenceurs = async () => {
     try {
-      const response = await fetch(SOCKET_URL+`/api/influenceurs`, {
+      const response = await fetch(SOCKET_URL + `/api/influenceurs`, {
         method: 'GET',
         credentials: 'include',
       });
