@@ -35,8 +35,23 @@ const AdminDashboard: React.FC = () => {
   // Ajoutez ces fonctions pour gérer les catégories
   const handleAddCategory = async () => {
     if (!newCategory?.name) return;
-    await addCategory(newCategory);
-    setShowCategoryForm(false);
+
+    try {
+      let imageUrl = '';
+      if (newCategory.imageUrl instanceof File) {
+        imageUrl = await uploadImage(newCategory.imageUrl);
+      } else if (newCategory.imageUrl) {
+        imageUrl = newCategory.imageUrl;
+      }
+
+      await addCategory({
+        name: newCategory.name,
+        imageUrl
+      });
+      setShowCategoryForm(false);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de la catégorie:', error);
+    }
   };
 
   const handleDeleteCategory = async (id: string) => {
@@ -45,11 +60,52 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    // Remplacez BACKEND_URL par l'URL de votre backend
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Échec du téléchargement de l\'image');
+      }
+
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      throw error;
+    }
+  };
+
+
   const handleSaveEditCategory = async () => {
     if (!editCategory) return;
-    await updateCategory(editCategory);
-    setEditingCategoryId(null);
-    setEditCategory(null);
+
+    try {
+      let imageUrl = editCategory.imageUrl;
+      if (editCategory.imageUrl instanceof File) {
+        imageUrl = await uploadImage(editCategory.imageUrl);
+      }
+
+      await updateCategory({
+        ...editCategory,
+        imageUrl
+      });
+      setEditingCategoryId(null);
+      setEditCategory(null);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+    }
   };
 
   const handleEditCategory = (category: Category) => {

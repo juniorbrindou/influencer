@@ -4,12 +4,31 @@ import { PrismaClient } from "@prisma/client";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
 const httpServer = createServer(app);
+
+// Configuration du stockage des fichiers
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = "public/uploads";
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
 
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
@@ -29,6 +48,21 @@ app.use(
   })
 );
 app.use(express.json());
+
+const upload = multer({ storage });
+
+
+app.post('/api/upload', upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Aucun fichier téléchargé' });
+  }
+  
+  const imageUrl = `/uploads/${req.file.filename}`;
+  res.json({ imageUrl });
+});
+
+// Servir les fichiers statiques
+app.use('/uploads', express.static('public/uploads'));
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
@@ -263,19 +297,19 @@ io.on("connection", (socket) => {
   });
 });
 
-// // Routes pour les catégories
-// app.get("/api/categories", async (req, res) => {
-//   try {
-//     const categories = await prisma.category.findMany({
-//       include: { influenceurs: true },
-//     });
-//     res.json(categories);
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ error: "Erreur lors de la récupération des catégories" });
-//   }
-// });
+// Routes pour les catégories
+app.get("/api/categories", async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      include: { influenceurs: true },
+    });
+    res.json(categories);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des catégories" });
+  }
+});
 
 // app.post("/api/categories", async (req, res) => {
 //   const { name } = req.body;
