@@ -29,8 +29,8 @@ model Influenceurs {
   id        String   @id @default(uuid())
   name      String
   imageUrl  String
-  categoryId  String    
-  category    Category  @relation(fields: [categoryId], references: [id])
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
   votesedAt DateTime @default(now())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

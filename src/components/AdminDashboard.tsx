@@ -1,9 +1,6 @@
-import React, { useState } from 'react';
-// Importe le hook personnalisé useVote depuis le contexte VoteContext
-// Importe les icônes depuis la bibliothèque lucide-react
+import React, { useEffect, useState } from 'react';
 import { PlusCircle, Edit, Trash2, Save, X } from 'lucide-react';
-// Importe le type Influenceur depuis le fichier types
-import { Influenceur } from '../types';
+import { Category, Influenceur } from '../types';
 import { useVote } from '../context/useVote';
 
 /**
@@ -13,11 +10,8 @@ const AdminDashboard: React.FC = () => {
   // Extrait les données et fonctions nécessaires du contexte VoteContext
   const { listInfluenceur: influenceurs, votes, addInfluenceur, removeInfluenceur, updateInfluenceur } = useVote();
 
-  // État pour contrôler l'affichage du formulaire d'ajout d'influenceur
   const [isAddingInfluenceur, setIsAddingInfluenceur] = useState(false);
-  // État pour stocker l'ID de l'influenceur en cours d'édition
   const [editingInfluenceurId, setEditingInfluenceurId] = useState<string | null>(null);
-  // État pour stocker les données du nouvel influenceur en cours de création
   const [newInfluenceur, setNewInfluenceur] = useState<Partial<Influenceur>>({
     name: '',
     imageUrl: ''
@@ -27,6 +21,90 @@ const AdminDashboard: React.FC = () => {
 
   // Calcule le nombre total de votes en additionnant les voteCount de tous les influenceurs
   const totalVotes = influenceurs.reduce((total, influenceur) => total + influenceur.voteCount, 0);
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategory, setNewCategory] = useState<Partial<Category> | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editCategory, setEditCategory] = useState<Category | null>(null);
+
+
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const response = await fetch('/api/categories');
+      const data = await response.json();
+      setCategories(data);
+    };
+    fetchCategories();
+  }, []);
+
+
+  // Ajoutez ces fonctions pour gérer les catégories
+  const handleAddCategory = async () => {
+    if (!newCategory!.name) return;
+
+    const formData = new FormData();
+    formData.append('name', newCategory!.name);
+    if (newCategory!.imageUrl) {
+      formData.append('image', newCategory!.imageUrl);
+    }
+
+    const response = await fetch('/api/categories', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+    setCategories([...categories, data]);
+    setNewCategory({ name: '', imageUrl: '', id: '' });
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+    setCategories(categories.filter(cat => cat.id !== id));
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategoryId(category.id);
+    setEditCategory({ ...category });
+  };
+
+  const handleSaveEditCategory = async () => {
+    if (!editCategory) return;
+
+    const formData = new FormData();
+    formData.append('name', editCategory.name);
+    if (editCategory!.imageUrl instanceof File) {
+      formData.append('image', editCategory.imageUrl);
+    }
+
+    const response = await fetch(`/api/categories/${editCategory.id}`, {
+      method: 'PUT',
+      body: formData,
+    });
+    const updatedCategory = await response.json();
+    setCategories(categories.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
+    setEditingCategoryId(null);
+    setEditCategory(null);
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setEditCategory(null);
+  };
+
+  const handleCategoryImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewCategory({ ...newCategory, imageUrl: e.target.files[0] });
+    }
+  };
+
+  const handleEditCategoryImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setEditCategory(prev => prev ? { ...prev, imageUrl: e.target.files![0] } : null);
+    }
+  };
+
 
   /**
    * Gère l'ajout d'un nouvel influenceur.
@@ -125,8 +203,138 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
+
+
+
+
+
+
+
+
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Gestion des catégories</h2>
+
+          <div className="mb-4">
+            <label htmlFor="newCategoryName" className="block text-sm font-medium text-gray-700 mb-1">
+              Nom de la nouvelle catégorie
+            </label>
+            <input
+              type="text"
+              id="newCategoryName"
+              value={newCategory?.name || ''}
+              onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm"
+              placeholder="Nom de la catégorie"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="newCategoryImage" className="block text-sm font-medium text-gray-700 mb-1">
+              Image de la nouvelle catégorie
+            </label>
+            <input
+              type="file"
+              id="newCategoryImage"
+              onChange={handleCategoryImageChange}
+              className="w-full"
+            />
+          </div>
+
+          <button
+            onClick={handleAddCategory}
+            disabled={!newCategory || !newCategory.name}
+            className="px-4 py-2 bg-[#28a745] text-white rounded-md hover:bg-[#218838] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          >
+            Ajouter une catégorie
+          </button>
+
+          <div className="space-y-2 mt-4">
+            {categories.map(category => (
+              <div key={category.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div className="flex items-center space-x-2">
+                  {category.imageUrl && (
+                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                      <img
+                        src={category.imageUrl instanceof File ? URL.createObjectURL(category.imageUrl) : category.imageUrl}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <span>
+                    {editingCategoryId === category.id ? (
+                      <input
+                        type="text"
+                        value={editCategory?.name || ''}
+                        onChange={(e) => setEditCategory(prev => prev ? { ...prev, name: e.target.value } : null)}
+                        className="px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
+                      />
+                    ) : (
+                      category.name
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {editingCategoryId === category.id ? (
+                    <>
+                      <input
+                        type="file"
+                        onChange={handleEditCategoryImageChange}
+                        className="text-sm"
+                      />
+                      <button
+                        onClick={handleSaveEditCategory}
+                        className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-100 transition-colors"
+                        title="Sauvegarder"
+                      >
+                        <Save className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={handleCancelEditCategory}
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors"
+                        title="Annuler"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleEditCategory(category)}
+                        className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-100 transition-colors"
+                        title="Modifier"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(category.id)}
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+
+
+
+
+
+
+
       {/* Section Gestion des Influenceurs */}
       <div className="bg-white rounded-lg shadow-md p-6">
+
+
+
+
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4"> {/* Responsive flex */}
           <h2 className="text-xl font-semibold text-gray-800">Gestion des influenceurs</h2>
 
@@ -200,6 +408,29 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+
+
+        {/* categories */}
+        <div className="mb-4">
+          <label htmlFor="filterCategory" className="block text-sm font-medium text-gray-700 mb-1">
+            Filtrer par catégorie
+          </label>
+          <select
+            id="filterCategory"
+            value={selectedCategory || ''}
+            onChange={(e) => setSelectedCategory(e.target.value || null)}
+            className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm"
+          >
+            <option value="">Toutes les catégories</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </div>
+
+
+
+
         {/* Tableau listant les influenceurs */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -209,12 +440,12 @@ const AdminDashboard: React.FC = () => {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Influenceur
                 </th>
-                 {/* NOUVEAU: En-tête : Colonne URL Image (visible seulement en édition) */}
-                 {editingInfluenceurId && (
-                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                     URL Image
-                   </th>
-                 )}
+                {/* NOUVEAU: En-tête : Colonne URL Image (visible seulement en édition) */}
+                {editingInfluenceurId && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    URL Image
+                  </th>
+                )}
                 {/* En-tête : Colonne Votes */}
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Votes
@@ -253,19 +484,19 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </td>
                   {editingInfluenceurId === influenceur.id && (
-                      <td className="px-6 py-4 whitespace-nowrap">
-                       <input
-                         type="text"
-                         value={editInfluenceur?.imageUrl || ''}
-                         onChange={(e) => setEditInfluenceur(prev => prev ? { ...prev, imageUrl: e.target.value } : null)}
-                         className="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
-                         placeholder="URL de l'image"
-                       />
-                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="text"
+                        value={editInfluenceur?.imageUrl || ''}
+                        onChange={(e) => setEditInfluenceur(prev => prev ? { ...prev, imageUrl: e.target.value } : null)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent"
+                        placeholder="URL de l'image"
+                      />
+                    </td>
                   )}
-                   {editingInfluenceurId !== null && editingInfluenceurId !== influenceur.id && (
+                  {editingInfluenceurId !== null && editingInfluenceurId !== influenceur.id && (
                     <td className="px-6 py-4 whitespace-nowrap"></td>
-                   )}
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${influenceur.voteCount > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                       {influenceur.voteCount} vote{influenceur.voteCount !== 1 ? 's' : ''}
@@ -314,11 +545,11 @@ const AdminDashboard: React.FC = () => {
               ))}
               {/* Ligne affichée si la liste des influenceurs est vide */}
               {influenceurs.length === 0 && !isAddingInfluenceur && (
-                  <tr>
-                      <td colSpan={editingInfluenceurId ? 4 : 3} className="px-6 py-4 text-center text-gray-500"> {/* Ajuste colSpan dynamiquement */}
-                        Aucun influenceur à afficher. Cliquez sur "Ajouter un Influenceur" pour commencer.
-                      </td>
-                  </tr>
+                <tr>
+                  <td colSpan={editingInfluenceurId ? 4 : 3} className="px-6 py-4 text-center text-gray-500"> {/* Ajuste colSpan dynamiquement */}
+                    Aucun influenceur à afficher. Cliquez sur "Ajouter un Influenceur" pour commencer.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

@@ -40,7 +40,7 @@ const socket = io(SOCKET_URL, {
 
 export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [influenceurs, setInfluenceurs] = useState<Influenceur[]>([]);
-  const [votes] = useState<Vote[]>(() => {
+  const [votes, setVotes] = useState<Vote[]>(() => {
     const stored = localStorage.getItem("votes");
     return stored ? JSON.parse(stored) : [];
   });

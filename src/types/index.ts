@@ -22,6 +22,6 @@ export interface Category {
   id: string;
   name: string;
   description?: string;
-  imageUrl: string;
+  imageUrl: string | File;
   influenceurs?: Influenceur[];
 }
