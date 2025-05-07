@@ -40,7 +40,7 @@ const socket = io(SOCKET_URL, {
 
 export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [influenceurs, setInfluenceurs] = useState<Influenceur[]>([]);
-  const [votes, setVotes] = useState<Vote[]>(() => {
+  const [votes] = useState<Vote[]>(() => {
     const stored = localStorage.getItem("votes");
     return stored ? JSON.parse(stored) : [];
   });
@@ -452,7 +452,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
               setIsLoading(false);
               resolve(false);
-            } catch (error) {
+            } catch {
               setOtpMessage(`Code OTP: ${response.otp} - Copiez ce code`);
               setIsLoading(false);
               resolve(false);
