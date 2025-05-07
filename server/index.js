@@ -263,47 +263,47 @@ io.on("connection", (socket) => {
   });
 });
 
-// Routes pour les catégories
-app.get("/api/categories", async (req, res) => {
-  try {
-    const categories = await prisma.category.findMany({
-      include: { influenceurs: true },
-    });
-    res.json(categories);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la récupération des catégories" });
-  }
-});
+// // Routes pour les catégories
+// app.get("/api/categories", async (req, res) => {
+//   try {
+//     const categories = await prisma.category.findMany({
+//       include: { influenceurs: true },
+//     });
+//     res.json(categories);
+//   } catch (error) {
+//     res
+//       .status(500)
+//       .json({ error: "Erreur lors de la récupération des catégories" });
+//   }
+// });
 
-app.post("/api/categories", async (req, res) => {
-  const { name } = req.body;
-  try {
-    const category = await prisma.category.create({
-      data: { name },
-    });
-    res.json(category);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la création de la catégorie" });
-  }
-});
+// app.post("/api/categories", async (req, res) => {
+//   const { name } = req.body;
+//   try {
+//     const category = await prisma.category.create({
+//       data: { name },
+//     });
+//     res.json(category);
+//   } catch (error) {
+//     res
+//       .status(500)
+//       .json({ error: "Erreur lors de la création de la catégorie" });
+//   }
+// });
 
-app.delete("/api/categories/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    await prisma.category.delete({
-      where: { id },
-    });
-    res.json({ message: "Catégorie supprimée avec succès" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la suppression de la catégorie" });
-  }
-});
+// app.delete("/api/categories/:id", async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     await prisma.category.delete({
+//       where: { id },
+//     });
+//     res.json({ message: "Catégorie supprimée avec succès" });
+//   } catch (error) {
+//     res
+//       .status(500)
+//       .json({ error: "Erreur lors de la suppression de la catégorie" });
+//   }
+// });
 
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
