@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useVote } from '../context/VoteContext';
+import { useVote } from '../context/useVote';
 
 // Définition du composant fonctionnel ResultsChart
 const ResultsChart: React.FC = () => {

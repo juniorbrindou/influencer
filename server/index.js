@@ -166,7 +166,7 @@ io.on("connection", (socket) => {
    * @throws {400} - Si le numéro de téléphone ou l'OTP est manquant
    * @throws {500} - Erreur serveur lors de la validation du vote
    */
-  socket.on("validateVote", async ({ phoneNumber, otp }) => {
+  socket.on("validateOTP", async ({ phoneNumber, otp }) => {
     if (!phoneNumber || !otp) {
       socket.emit("validateError", "Numéro ou OTP manquant.");
       return;

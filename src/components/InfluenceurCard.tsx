@@ -1,6 +1,6 @@
 import React from 'react';
-import { useVote } from '../context/VoteContext';
 import { Influenceur } from '../types';
+import { useVote } from '../context/useVote';
 
 interface InfluenceurCardProps {
    /**

@@ -3,10 +3,10 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { VoteProvider } from './context/VoteContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import HomePage from './pages/HomePage';
 import ConfirmationPage from './pages/ConfirmationPage';
 import ResultsPage from './pages/ResultsPage';
 import AdminPage from './pages/AdminPage';
+import HomePage from './pages/HomePage';
 
 function App() {
   return (

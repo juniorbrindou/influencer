@@ -1,10 +1,21 @@
 import React from 'react';
-import InfluenceurCard from '../components/InfluenceurCard';
-import VoteModal from '../components/VoteModal';
-import { useVote } from '../context/usevote';
+import { useVote } from '../context/VoteContext';
+import CategoryCard from '../components/CategoryCard';
+import { motion } from 'framer-motion';
+import { Category } from '../types';
 
 const HomePage: React.FC = () => {
-  const { listInfluenceur: influenceurs, selectedInfluenceur: selectedInfluenceur } = useVote();
+  const { categories } = useVote();
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
 
   return (
     <div>
@@ -22,7 +33,7 @@ const HomePage: React.FC = () => {
               Des Influenceurs de l'Année 2025
             </h1>
             <p className="text-lg md:text-xl text-yellow-500 max-w-2xl">
-              Votez pour votre influenceur préféré et participez à la première édition de ce grand événement.
+              Découvrez nos catégories d'influenceurs et votez pour vos favoris.
             </p>
           </div>
         </div>
@@ -31,21 +42,23 @@ const HomePage: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Votez pour votre influenceur préféré</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Catégories</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Soutenez vos influenceurs préférés en votant pour eux. C'est gratuit et sans création de compte.
+            Explorez nos différentes catégories d'influenceurs et découvrez les talents qui vous inspirent.
           </p>
         </div>
 
-        {/* Influenceur Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {influenceurs.map(influenceur => (
-            <InfluenceurCard key={influenceur.id} influenceur={influenceur} />
+        {/* Categories Grid */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+        >
+          {categories.map((category: Category) => (
+            <CategoryCard key={category.id} category={category} />
           ))}
-        </div>
-
-        {/* Vote Modal */}
-        {selectedInfluenceur && <VoteModal />}
+        </motion.div>
       </div>
     </div>
   );

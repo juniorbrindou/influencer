@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { useVote } from '../context/VoteContext'; // Hook pour accéder au contexte de vote
 import { useNavigate } from 'react-router-dom'; // Hook pour la navigation
+import { useVote } from '../context/useVote';
 
 const VoteModal: React.FC = () => {
   // Utilisation du hook useVote pour accéder aux états et fonctions partagés

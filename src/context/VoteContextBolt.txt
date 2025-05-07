@@ -1,0 +1,346 @@
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { Influenceur, Vote } from '../types';
+
+
+interface VoteContextType {
+  listInfluenceur: Influenceur[];
+  votes: Vote[];
+  selectedInfluenceur: Influenceur | null;
+  phoneNumber: string;
+  otpMessage: string;
+  isLoading: boolean;
+  error: string | null;
+  setPhoneNumber: (number: string) => void;
+  selectInfluenceur: (influenceur: Influenceur) => void;
+  submitVote: (influenceur: Influenceur, phoneNumber: string) => Promise<void>;
+  requestOTP: (influenceur: Influenceur, phoneNumber: string) => Promise<boolean>;
+  validateOTP: (otp: string) => Promise<void>;
+  resetSelection: () => void;
+  addInfluenceur: (influenceur: Influenceur) => Promise<void>;
+  removeInfluenceur: (id: string) => Promise<void>;
+  updateInfluenceur: (influenceur: Influenceur) => Promise<void>;
+}
+
+
+// Context
+const VoteContext = createContext<VoteContextType | undefined>(undefined);
+
+// Configuration du socket adaptée au serveur
+// Socket configuration
+const socket: Socket = io('https://influenceur2lannee.com', {
+  withCredentials: true,
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000
+});
+
+// WhatsApp utilities
+const formatPhoneNumber = (phoneNumber: string): string => {
+  const cleaned = phoneNumber.replace(/[^\d+]/g, '').replace(/^00/, '+');
+  return cleaned.startsWith('+') ? cleaned : `+225${cleaned}`;
+};
+
+const createWhatsAppLink = (phoneNumber: string, otp: string): string => {
+  const message = `Votre code OTP est : ${otp}\n\nValide 5 minutes`;
+  const formattedPhone = formatPhoneNumber(phoneNumber);
+  return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+};
+
+
+
+// Provider Component
+export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // State
+  const [influenceurs, setInfluenceurs] = useState<Influenceur[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
+  const [selectedInfluenceur, setSelectedInfluenceur] = useState<Influenceur | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [socketConnected, setSocketConnected] = useState<boolean>(false);
+  const [otpMessage, setOtpMessage] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Socket Event Handlers
+  useEffect(() => {
+    const handleConnect = () => {
+      console.log("✅ Connecté au serveur Socket.IO:", socket.id);
+      setSocketConnected(true);
+    };
+
+    const handleDisconnect = () => {
+      console.log("🔴 Déconnecté du serveur Socket.IO");
+      setSocketConnected(false);
+    };
+
+    const handleConnectError = (error: Error) => {
+      console.error("❌ Erreur de connexion Socket.IO:", error);
+      setError(`Erreur de connexion: ${error.message}`);
+    };
+
+    const handleVoteUpdate = ({ influenceurId, newVoteCount }: { influenceurId: string; newVoteCount: number }) => {
+      setInfluenceurs(prev =>
+        prev.map(inf => inf.id === influenceurId ? { ...inf, voteCount: newVoteCount } : inf)
+      );
+    };
+
+    const handleInfluenceursUpdate = (data: any) => {
+      if (data.newInfluenceur) {
+        setInfluenceurs(prev => [...prev, data.newInfluenceur]);
+      } else if (data.deletedInfluenceurId) {
+        setInfluenceurs(prev => prev.filter(inf => inf.id !== data.deletedInfluenceurId));
+      } else if (data.updatedInfluenceur) {
+        setInfluenceurs(prev => prev.map(inf =>
+          inf.id === data.updatedInfluenceur.id ? data.updatedInfluenceur : inf
+        ));
+      }
+    };
+
+    // Socket event listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
+    socket.on('voteUpdate', handleVoteUpdate);
+    socket.on('influenceursUpdate', handleInfluenceursUpdate);
+
+    socket.connect();
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
+      socket.off('voteUpdate', handleVoteUpdate);
+      socket.off('influenceursUpdate', handleInfluenceursUpdate);
+    };
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchInfluenceurs();
+  }, []);
+
+  // API Functions
+  const fetchInfluenceurs = async () => {
+    try {
+      const response = await fetch('/api/influenceurs', {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      
+      const data = await response.json();
+      setInfluenceurs(data);
+    } catch (error) {
+      console.error('Erreur chargement influenceurs:', error);
+      setError('Erreur chargement influenceurs');
+    }
+  };
+
+  // Vote Functions
+  const submitVote = async (selectedInfluenceur: Influenceur, phoneNumber: string): Promise<void> => {
+    if (!selectedInfluenceur || !phoneNumber) {
+      setError("Sélectionnez un influenceur et entrez un numéro");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      socket.emit("submitVote", {
+        influenceurId: selectedInfluenceur.id,
+        phoneNumber: phoneNumber
+      });
+    } catch (error) {
+      setIsLoading(false);
+      setError('Erreur lors du vote');
+      throw error;
+    }
+  };
+
+  const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumber: string): Promise<boolean> => {
+    if (!selectedInfluenceur || !phoneNumber) {
+      setError("Informations manquantes");
+      return false;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Délai d'attente dépassé"));
+          setIsLoading(false);
+          setError("Délai d'attente dépassé");
+        }, 10000);
+
+        const handleOtpResponse = (response: { hasVoted: boolean; otp?: string }) => {
+          clearTimeout(timeout);
+          socket.off("otpResponse", handleOtpResponse);
+          
+          if (response.hasVoted) {
+            setError("Vous avez déjà voté");
+            setIsLoading(false);
+            resolve(true);
+            return;
+          }
+
+          if (response.otp) {
+            setOtpMessage("Code envoyé");
+            const whatsappLink = createWhatsAppLink(phoneNumber, response.otp);
+            window.open(whatsappLink, '_blank');
+          }
+
+          setIsLoading(false);
+          resolve(false);
+        };
+
+        socket.on("otpResponse", handleOtpResponse);
+        socket.emit("requestOTP", { phoneNumber, influenceurId: selectedInfluenceur.id });
+      });
+    } catch (error) {
+      setIsLoading(false);
+      setError('Erreur vérification vote');
+      throw error;
+    }
+  };
+
+  const validateOTP = async (otp: string): Promise<void> => {
+    if (!phoneNumber) {
+      setError("Numéro manquant");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      socket.emit("validateOTP", { phoneNumber, otp });
+    } catch (error) {
+      setIsLoading(false);
+      setError('Erreur validation OTP');
+      throw error;
+    }
+  };
+
+  // Influenceur Management Functions
+  const addInfluenceur = async (influenceur: Influenceur) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/influenceurs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(influenceur),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erreur d'ajout");
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      setError("Erreur d'ajout influenceur");
+      throw error;
+    }
+  };
+
+  const removeInfluenceur = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/influenceurs/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur de suppression');
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      setError('Erreur de suppression');
+      throw error;
+    }
+  };
+
+  const updateInfluenceur = async (updatedInfluenceur: Influenceur) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/influenceurs/${updatedInfluenceur.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updatedInfluenceur),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur de mise à jour');
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      setError('Erreur de mise à jour');
+      throw error;
+    }
+  };
+
+  // Utility Functions
+  const selectInfluenceur = (influenceur: Influenceur) => {
+    setSelectedInfluenceur(influenceur);
+    setError(null);
+  };
+
+  const resetSelection = () => {
+    setSelectedInfluenceur(null);
+    setPhoneNumber('');
+    setError(null);
+    setOtpMessage('');
+  };
+
+  return (
+    <VoteContext.Provider
+      value={{
+        listInfluenceur: influenceurs,
+        votes,
+        selectedInfluenceur,
+        phoneNumber,
+        setPhoneNumber,
+        selectInfluenceur,
+        submitVote,
+        requestOTP,
+        validateOTP,
+        resetSelection,
+        addInfluenceur,
+        removeInfluenceur,
+        updateInfluenceur,
+        otpMessage,
+        isLoading,
+        error
+      }}
+    >
+      {socketConnected ? null : (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg">
+          Déconnecté du serveur - Les votes en temps réel ne sont pas disponibles
+        </div>
+      )}
+      {children}
+    </VoteContext.Provider>
+  );
+};
+
+export const useVote = () => {
+  const context = useContext(VoteContext);
+  if (context === undefined) {
+    throw new Error('useVote must be used within a VoteProvider');
+  }
+  return context;
+};

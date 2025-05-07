@@ -1,6 +1,6 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Influenceur, Vote } from '../types';
+import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
+import { Influenceur, Vote } from '../types';
 
 
 interface VoteContextType {
@@ -22,10 +22,13 @@ interface VoteContextType {
   error: string | null;
 }
 
-const VoteContext = createContext<VoteContextType | undefined>(undefined);
+export const VoteContext = createContext<VoteContextType | undefined>(undefined);
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+
 
 // Configuration du socket adaptée au serveur
-const socket = io('https://influenceur2lannee.com', {
+const socket = io(SOCKET_URL, {
   withCredentials: true,
   transports: ['websocket', 'polling'],
   reconnection: true,
@@ -45,6 +48,8 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [receivedOTP, setReceivedOTP] = useState<string | null>(null);
+
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   // Configurer les écouteurs de socket.io
   useEffect(() => {
@@ -161,7 +166,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const fetchInfluenceurs = async () => {
     try {
-      const response = await fetch('/api/influenceurs', {
+      const response = await fetch(BACKEND_URL+'/api/influenceurs', {
         method: 'GET',
         credentials: 'include', // Envoyer les cookies
         headers: {
@@ -233,7 +238,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addInfluenceur = async (influenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/influenceurs', {
+      const response = await fetch(BACKEND_URL+'/api/influenceurs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,7 +271,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const removeInfluenceur = async (id: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/influenceurs/${id}`, {
+      const response = await fetch(BACKEND_URL+`/api/influenceurs/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -295,7 +300,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateInfluenceur = async (updatedInfluenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/influenceurs/${updatedInfluenceur.id}`, {
+      const response = await fetch(BACKEND_URL+`/api/influenceurs/${updatedInfluenceur.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -431,8 +436,8 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * @throws {Error} Si la requête échoue
    */
   const validateOTP = async (otp: string): Promise<void> => {
-    if (!phoneNumber) {
-      setError("Numéro de téléphone manquant");
+    if (!otp || !selectedInfluenceur || !phoneNumber) {
+      setError("Tous les champs sont requis pour valider le vote.");
       return;
     }
 
@@ -441,9 +446,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
 
       // Utiliser socket.io pour valider l'OTP
-      socket.emit("validateVote", {
-        phoneNumber: phoneNumber,
-        otp: otp
+      socket.emit("validateOTP", {
+        influenceurId: selectedInfluenceur.id,
+        phoneNumber,
+        otp
       });
       console.log("Validation de l'OTP:", otp);
 
@@ -486,12 +492,4 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </VoteContext.Provider>
   );
-};
-
-export const useVote = () => {
-  const context = useContext(VoteContext);
-  if (context === undefined) {
-    throw new Error('useVote must be used within a VoteProvider');
-  }
-  return context;
 };

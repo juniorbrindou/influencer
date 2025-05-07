@@ -2,6 +2,8 @@ export interface Influenceur {
   id: string;
   name: string;
   imageUrl: string;
+  categoryId: string;
+  category?: Category;
   voteCount: number;
 }
 
@@ -14,4 +16,12 @@ export interface Vote {
 export interface AdminCredentials {
   username: string;
   password: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl: string;
+  influenceurs?: Influenceur[];
 }

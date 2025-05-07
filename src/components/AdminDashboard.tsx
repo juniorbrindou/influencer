@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 // Importe le hook personnalisé useVote depuis le contexte VoteContext
-import { useVote } from '../context/VoteContext';
 // Importe les icônes depuis la bibliothèque lucide-react
 import { PlusCircle, Edit, Trash2, Save, X } from 'lucide-react';
 // Importe le type Influenceur depuis le fichier types
 import { Influenceur } from '../types';
+import { useVote } from '../context/useVote';
 
 /**
  * Composant AdminDashboard pour gérer les influenceurs et afficher les statistiques de vote.
@@ -43,7 +43,8 @@ const AdminDashboard: React.FC = () => {
       id: '',
       name: newInfluenceur.name,
       imageUrl: newInfluenceur.imageUrl,
-      voteCount: 0
+      voteCount: 0,
+      categoryId: ''
     });
 
     // Réinitialise les champs du formulaire d'ajout
