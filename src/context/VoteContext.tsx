@@ -40,7 +40,10 @@ const socket = io(SOCKET_URL, {
 
 export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [influenceurs, setInfluenceurs] = useState<Influenceur[]>([]);
-  const [votes, setVotes] = useState<Vote[]>([]);
+  const [votes, setVotes] = useState<Vote[]>(() => {
+    const stored = localStorage.getItem("votes");
+    return stored ? JSON.parse(stored) : [];
+  });
   const [selectedInfluenceur, setSelectedInfluenceur] = useState<Influenceur | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
@@ -50,6 +53,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [receivedOTP, setReceivedOTP] = useState<string | null>(null);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+  useEffect(() => {
+    localStorage.setItem("votes", JSON.stringify(votes));
+  }, [votes]);
 
   // Configurer les écouteurs de socket.io
   useEffect(() => {
@@ -123,6 +130,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     socket.on("validateSuccess", (validatedVote) => {
       console.log("Vote validé avec succès:", validatedVote);
+      localStorage.setItem("votes", JSON.stringify(votes));
       setIsLoading(false);
       resetSelection();
     });
@@ -132,6 +140,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(errorMessage);
       setIsLoading(false);
     });
+
 
     // Force une tentative de connexion
     socket.connect();
@@ -156,6 +165,22 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchInfluenceurs();
   }, []);
+
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleVoteValidated = ({ influenceurId }: { influenceurId: string }) => {
+      console.log("voteValidated reçu pour:", influenceurId);
+      fetchInfluenceurs(); // 💥 on recharge
+    };
+
+    socket.on("voteValidated", handleVoteValidated);
+
+    return () => {
+      socket.off("voteValidated", handleVoteValidated);
+    };
+  }, [socket]);
 
   /**
    * Fonction pour récupérer la liste des influenceurs depuis l'API

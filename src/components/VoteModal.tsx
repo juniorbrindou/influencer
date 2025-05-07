@@ -12,6 +12,9 @@ const VoteModal: React.FC = () => {
     submitVote, // La fonction pour soumettre le vote
     resetSelection, // La fonction pour fermer la modale et réinitialiser la sélection
     requestOTP, // La fonction pour demander un code OTP (One Time Password)
+    validateOTP, // Ajoutez cette ligne
+    error: contextError, // Renommez error pour éviter les conflits
+    otpMessage, // Ajoutez si nécessaire
   } = useVote();
 
   // États locaux pour gérer le formulaire
@@ -49,25 +52,25 @@ const VoteModal: React.FC = () => {
   };
 
   // Gère la soumission du formulaire de code de vérification
-  const handleCodeSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Empêche le rechargement de la page
-    setIsSubmitting(true); // Active l'état de soumission
+  const handleCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
-    // Validation du code de vérification (doit être 6 chiffres)
-    if (verificationCode.length === 6 && /^\d+$/.test(verificationCode)) {
-      // Appel de la fonction de soumission du vote (du contexte)
-      submitVote(selectedInfluenceur, phoneNumber);
+    try {
+      // Validation du code
+      if (verificationCode.length !== 6 || !/^\d+$/.test(verificationCode)) {
+        throw new Error('Code de vérification invalide');
+      }
 
-      // Redirige vers la page de confirmation après un délai
-      // Ce délai simule potentiellement une action asynchrone ou permet de voir l'état de soumission
-      setTimeout(() => {
-        navigate('/confirmation'); // Navigue vers la page de confirmation
-        resetSelection(); // Ferme la modale et réinitialise l'influenceur sélectionné
-      }, 1000); // Délai de 1 seconde
-    } else {
-      // Affiche une erreur si le code est invalide
-      setError('Code de vérification invalide');
-      setIsSubmitting(false); // Désactive l'état de soumission
+      // Valider l'OTP avec le backend
+      await validateOTP(verificationCode);
+
+      // La redirection sera gérée par les écouteurs socket dans VoteContext
+      navigate('/confirmation'); // Redirige vers la page de confirmation
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Erreur de validation');
+      setIsSubmitting(false);
     }
   };
 

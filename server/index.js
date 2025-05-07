@@ -14,7 +14,7 @@ const httpServer = createServer(app);
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:5173', 'https://influenceur2lannee.com'],
+    origin: ["http://localhost:5173", "https://influenceur2lannee.com"],
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -130,7 +130,7 @@ io.on("connection", (socket) => {
           } pour ${phoneNumber}: ${otpToSend}`
         );
         socket.emit("otpSent", otpToSend);
-        socket.emit("otpResponse", { hasVoted: false , otp: otpToSend });
+        socket.emit("otpResponse", { hasVoted: false, otp: otpToSend });
         return;
       }
 
@@ -149,7 +149,7 @@ io.on("connection", (socket) => {
 
       console.log(`📲 Nouvel OTP pour ${phoneNumber}: ${newOtp}`);
       socket.emit("otpSent", newOtp);
-      socket.emit("otpResponse", { hasVoted: false , otp: newOtp });
+      socket.emit("otpResponse", { hasVoted: false, otp: newOtp });
       return;
     } catch (err) {
       console.error("Erreur OTP:", err);
@@ -173,19 +173,30 @@ io.on("connection", (socket) => {
     }
 
     try {
-      const vote = await prisma.votes.findUnique({ where: { phoneNumber } });
-
-      if (!vote || vote.otp !== otp) {
-        socket.emit("validateError", "OTP invalide.");
-        return;
-      }
-
-      const updatedVote = await prisma.votes.update({
-        where: { phoneNumber },
-        data: { isValidated: true },
+      const vote = await prisma.votes.findFirst({
+        where: {
+          phoneNumber,
+          otp,
+          isValidated: false,
+          otpExpiresAt: {
+            gte: new Date(), // OTP encore valide
+          },
+        },
       });
 
+      if (!vote) {
+        socket.emit("validateError", "OTP invalide ou expiré.");
+        return;
+      }
+      const updatedVote = await prisma.votes.update({
+        where: { id: vote.id },
+        data: { isValidated: true },
+      });
       socket.emit("validateSuccess", updatedVote);
+      // 🚀 Emit une mise à jour en temps réel si besoin :
+      io.emit("voteValidated", {
+        influenceurId: updatedVote.influenceurId,
+      });
     } catch (err) {
       console.error("Erreur validation WebSocket:", err);
       socket.emit("validateError", "Erreur serveur.");
@@ -196,7 +207,6 @@ io.on("connection", (socket) => {
     console.log("Client déconnecté:", socket.id);
   });
 });
-
 
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
@@ -226,7 +236,6 @@ app.get("/api/influenceurs", async (req, res) => {
       .json({ error: "Erreur lors de la récupération des influenceurs" });
   }
 });
-
 
 /**
  * Route pour Supprimer un influenceur
