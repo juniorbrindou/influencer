@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { Influenceur, Vote } from '../types';
+import { Category, Influenceur, Vote } from '../types';
 
 
 interface VoteContextType {
@@ -20,6 +20,11 @@ interface VoteContextType {
   otpMessage: string;
   isLoading: boolean;
   error: string | null;
+
+  categories: Category[];
+  addCategory: (category: Partial<Category>) => Promise<void>;
+  removeCategory: (id: string) => Promise<void>;
+  updateCategory: (category: Category) => Promise<void>;
 }
 
 export const VoteContext = createContext<VoteContextType | undefined>(undefined);
@@ -51,6 +56,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [receivedOTP, setReceivedOTP] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -181,6 +187,50 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       socket.off("voteValidated", handleVoteValidated);
     };
   }, [socket]);
+
+
+
+  // Ajoutez ces fonctions
+  const addCategory = async (category: Partial<Category>) => {
+    try {
+      setIsLoading(true);
+      socket.emit("addCategory", category);
+    } catch (error) {
+      setIsLoading(false);
+      setError("Erreur lors de l'ajout de la catégorie");
+      throw error;
+    }
+  };
+
+  const removeCategory = async (id: string) => {
+    try {
+      setIsLoading(true);
+      socket.emit("removeCategory", id);
+    } catch (error) {
+      setIsLoading(false);
+      setError("Erreur lors de la suppression de la catégorie");
+      throw error;
+    }
+  };
+
+  const updateCategory = async (category: Category) => {
+    try {
+      setIsLoading(true);
+      socket.emit("updateCategory", category);
+    } catch (error) {
+      setIsLoading(false);
+      setError("Erreur lors de la mise à jour de la catégorie");
+      throw error;
+    }
+  };
+
+
+
+
+
+
+
+
 
   /**
    * Fonction pour récupérer la liste des influenceurs depuis l'API
@@ -536,7 +586,11 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateInfluenceur,
         otpMessage,
         isLoading,
-        error
+        error,
+        categories,
+        addCategory,
+        removeCategory,
+        updateCategory
       }}
     >
       {socketConnected ? null : (

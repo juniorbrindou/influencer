@@ -69,6 +69,66 @@ export const useSocket = ({
       }
     });
 
+
+    // ************************************************************************************
+    // ******************** 🚀 Système de gestion ultra-moderne des catégories 🚀 **********
+    // ************************************************************************************
+    socket.on('categoriesUpdate', (data) => {
+      if (data.newCategory) {
+        console.log('🆕 Nouvelle catégorie ajoutée:', data.newCategory);
+        // Ajouter une nouvelle catégorie
+      }
+
+      if (data.deletedCategoryId) {
+        console.log('🗑️ Catégorie supprimée:', data.deletedCategoryId);
+        // Supprimer une catégorie
+      }
+
+      if (data.updatedCategory) {
+        console.log('🔄 Catégorie mise à jour:', data.updatedCategory);
+        // Mettre à jour une catégorie
+      }
+    });
+    socket.on('categoriesUpdate', (data) => {
+      if (data.newCategory) {
+        // Ajouter une nouvelle catégorie
+      }
+
+      if (data.deletedCategoryId) {
+        // Supprimer une catégorie
+      }
+
+      if (data.updatedCategory) {
+        // Mettre à jour une catégorie
+      }
+    });
+
+    socket.on('categoryAdded', (newCategory) => {
+      // Gérer l'ajout côté client
+    });
+
+    socket.on('categoryRemoved', (id) => {
+      // Gérer la suppression côté client
+    });
+
+    socket.on('categoryUpdated', (updatedCategory) => {
+      // Gérer la mise à jour côté client
+    });
+
+    socket.on('categoryError', (errorMessage) => {
+      setError(errorMessage);
+    });
+
+    // fin gestion des categories
+
+
+
+
+
+
+
+
+
     socket.on('otpSent', (otp: string) => {
       setReceivedOTP(otp);
       setOtpMessage('Code de validation envoyé');

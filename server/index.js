@@ -203,69 +203,107 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("addCategory", async ({ name, imageUrl }) => {
+    try {
+      const category = await prisma.category.create({
+        data: { name, imageUrl },
+      });
+
+      io.emit("categoriesUpdate", { newCategory: category });
+      socket.emit("categoryAdded", category);
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de catégorie:", error);
+      socket.emit("categoryError", "Erreur lors de l'ajout de la catégorie");
+    }
+  });
+
+  /**
+   * Événement pour supprimer une catégorie
+   */
+  socket.on("removeCategory", async (id) => {
+    try {
+      await prisma.category.delete({
+        where: { id },
+      });
+
+      io.emit("categoriesUpdate", { deletedCategoryId: id });
+      socket.emit("categoryRemoved", id);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de catégorie:", error);
+      socket.emit(
+        "categoryError",
+        "Erreur lors de la suppression de la catégorie"
+      );
+    }
+  });
+
+  /**
+   * Événement pour mettre à jour une catégorie
+   */
+  socket.on("updateCategory", async ({ id, name, imageUrl }) => {
+    try {
+      const updatedCategory = await prisma.category.update({
+        where: { id },
+        data: { name, imageUrl },
+      });
+
+      io.emit("categoriesUpdate", { updatedCategory });
+      socket.emit("categoryUpdated", updatedCategory);
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de catégorie:", error);
+      socket.emit(
+        "categoryError",
+        "Erreur lors de la mise à jour de la catégorie"
+      );
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("Client déconnecté:", socket.id);
   });
 });
 
-
-
-
-
-
-
-
-
 // Routes pour les catégories
-app.get('/api/categories', async (req, res) => {
+app.get("/api/categories", async (req, res) => {
   try {
     const categories = await prisma.category.findMany({
-      include: { influenceurs: true }
+      include: { influenceurs: true },
     });
     res.json(categories);
   } catch (error) {
-    res.status(500).json({ error: 'Erreur lors de la récupération des catégories' });
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des catégories" });
   }
 });
 
-app.post('/api/categories', async (req, res) => {
+app.post("/api/categories", async (req, res) => {
   const { name } = req.body;
   try {
     const category = await prisma.category.create({
-      data: { name }
+      data: { name },
     });
     res.json(category);
   } catch (error) {
-    res.status(500).json({ error: 'Erreur lors de la création de la catégorie' });
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la création de la catégorie" });
   }
 });
 
-app.delete('/api/categories/:id', async (req, res) => {
+app.delete("/api/categories/:id", async (req, res) => {
   const { id } = req.params;
   try {
     await prisma.category.delete({
-      where: { id }
+      where: { id },
     });
-    res.json({ message: 'Catégorie supprimée avec succès' });
+    res.json({ message: "Catégorie supprimée avec succès" });
   } catch (error) {
-    res.status(500).json({ error: 'Erreur lors de la suppression de la catégorie' });
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la suppression de la catégorie" });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {

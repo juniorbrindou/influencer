@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PlusCircle, Edit, Trash2, Save, X } from 'lucide-react';
 import { Category, Influenceur } from '../types';
 import { useVote } from '../context/useVote';
+import { useCategoryManager } from '../context/useCartegoryManager';
 
 /**
  * Composant AdminDashboard pour gérer les influenceurs et afficher les statistiques de vote.
@@ -22,71 +23,38 @@ const AdminDashboard: React.FC = () => {
   // Calcule le nombre total de votes en additionnant les voteCount de tous les influenceurs
   const totalVotes = influenceurs.reduce((total, influenceur) => total + influenceur.voteCount, 0);
 
-  const [categories, setCategories] = useState<Category[]>([]);
+  // const [categories, setCategories] = useState<Category[]>([]);
   const [newCategory, setNewCategory] = useState<Partial<Category> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
-
-
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const response = await fetch('/api/categories');
-      const data = await response.json();
-      setCategories(data);
-    };
-    fetchCategories();
-  }, []);
+  const { categories, addCategory, removeCategory, updateCategory, isLoading: isCategoryLoading, error: categoryError } = useCategoryManager();
 
 
   // Ajoutez ces fonctions pour gérer les catégories
   const handleAddCategory = async () => {
-    if (!newCategory!.name) return;
-
-    const formData = new FormData();
-    formData.append('name', newCategory!.name);
-    if (newCategory!.imageUrl) {
-      formData.append('image', newCategory!.imageUrl);
-    }
-
-    const response = await fetch('/api/categories', {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await response.json();
-    setCategories([...categories, data]);
-    setNewCategory({ name: '', imageUrl: '', id: '' });
+    if (!newCategory?.name) return;
+    await addCategory(newCategory);
+    setShowCategoryForm(false);
   };
 
   const handleDeleteCategory = async (id: string) => {
-    await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-    setCategories(categories.filter(cat => cat.id !== id));
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+      await removeCategory(id);
+    }
+  };
+
+  const handleSaveEditCategory = async () => {
+    if (!editCategory) return;
+    await updateCategory(editCategory);
+    setEditingCategoryId(null);
+    setEditCategory(null);
   };
 
   const handleEditCategory = (category: Category) => {
     setEditingCategoryId(category.id);
     setEditCategory({ ...category });
-  };
-
-  const handleSaveEditCategory = async () => {
-    if (!editCategory) return;
-
-    const formData = new FormData();
-    formData.append('name', editCategory.name);
-    if (editCategory!.imageUrl instanceof File) {
-      formData.append('image', editCategory.imageUrl);
-    }
-
-    const response = await fetch(`/api/categories/${editCategory.id}`, {
-      method: 'PUT',
-      body: formData,
-    });
-    const updatedCategory = await response.json();
-    setCategories(categories.map(cat => cat.id === updatedCategory.id ? updatedCategory : cat));
-    setEditingCategoryId(null);
-    setEditCategory(null);
   };
 
   const handleCancelEditCategory = () => {
