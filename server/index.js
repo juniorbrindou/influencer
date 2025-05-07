@@ -203,7 +203,11 @@ app.get("/api/influenceurs", async (req, res) => {
   try {
     const influenceurs = await prisma.influenceurs.findMany({
       include: {
-        votes: true,
+        votes: {
+          where: {
+            isValidated: true, // 👈 on filtre ici
+          },
+        },
       },
     });
 
@@ -211,7 +215,7 @@ app.get("/api/influenceurs", async (req, res) => {
       id: influenceur.id,
       name: influenceur.name,
       imageUrl: influenceur.imageUrl,
-      voteCount: influenceur.votes.length,
+      voteCount: influenceur.votes.length, // 👈 ici c'est que les validés maintenant
     }));
 
     res.json(influenceursWithVoteCount);
@@ -222,6 +226,7 @@ app.get("/api/influenceurs", async (req, res) => {
       .json({ error: "Erreur lors de la récupération des influenceurs" });
   }
 });
+
 
 /**
  * Route pour Supprimer un influenceur

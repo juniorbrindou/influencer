@@ -166,7 +166,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const fetchInfluenceurs = async () => {
     try {
-      const response = await fetch(BACKEND_URL+'/api/influenceurs', {
+      const response = await fetch(BACKEND_URL + '/api/influenceurs', {
         method: 'GET',
         credentials: 'include', // Envoyer les cookies
         headers: {
@@ -210,23 +210,38 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Ajoutez en haut de votre fichier
 
   // Fonction d'envoi
-  const sendWhatsAppLink = (phoneNumber: string, otp: string) => {
+  const sendWhatsAppLink = (phoneNumber: string, otp: string): string => {
     try {
-      const message = `Votre code OTP est : ${otp}\n\nValide 5 minutes`;
-      const formattedPhone = phoneNumber.replace(/[^\d+]/g, '').replace(/^00/, '+');
-      phoneNumber = "+225" + formattedPhone;
-      const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      // Nettoyer et formater le numéro de téléphone
+      let formattedPhone = phoneNumber.trim();
 
-      return {
-        otp,
-        whatsappLink
-      };
+      // Supprimer tous les caractères non numériques sauf le +
+      formattedPhone = formattedPhone.replace(/[^\d+]/g, '');
+
+      // Remplacer le préfixe 00 par + si présent
+      if (formattedPhone.startsWith('00')) {
+        formattedPhone = '+' + formattedPhone.substring(2);
+      }
+
+      // Ajouter l'indicatif par défaut si aucun indicatif international n'est présent
+      if (!formattedPhone.startsWith('+')) {
+        formattedPhone = '+225' + formattedPhone; // +225 pour la Côte d'Ivoire
+      }
+
+      // Vérifier que le numéro est valide
+      if (formattedPhone.length < 8) {
+        throw new Error('Numéro de téléphone trop court');
+      }
+
+      const message = `Votre code de validation est : ${otp}\n\nCe code est valable 5 minutes.`;
+      const encodedMessage = encodeURIComponent(message);
+
+      return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
     } catch (error) {
-      console.error('Erreur génération lien WhatsApp:', error);
-      throw error;
+      console.error('Erreur lors de la génération du lien WhatsApp:', error);
+      throw new Error('Erreur lors de la préparation du message WhatsApp');
     }
   };
-
   // -------------------Influenceur ------------------- //
 
   /**
@@ -238,7 +253,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addInfluenceur = async (influenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch(BACKEND_URL+'/api/influenceurs', {
+      const response = await fetch(BACKEND_URL + '/api/influenceurs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +286,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const removeInfluenceur = async (id: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(BACKEND_URL+`/api/influenceurs/${id}`, {
+      const response = await fetch(BACKEND_URL + `/api/influenceurs/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -300,7 +315,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateInfluenceur = async (updatedInfluenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch(BACKEND_URL+`/api/influenceurs/${updatedInfluenceur.id}`, {
+      const response = await fetch(BACKEND_URL + `/api/influenceurs/${updatedInfluenceur.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -369,6 +384,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       setError(null);
+      setOtpMessage('');
 
       // Utiliser socket.io pour demander l'OTP
       socket.emit("requestOTP", {
@@ -376,7 +392,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         influenceurId: selectedInfluenceur.id
       });
 
-      // On crée une promesse qui sera résolue quand on recevra la réponse
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error("Délai d'attente dépassé pour la demande d'OTP"));
@@ -384,40 +399,55 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setError("Délai d'attente dépassé pour la demande d'OTP");
         }, 10000); // 10 secondes de timeout
 
-        // Fonction temporaire pour recevoir la réponse
         const onResponse = (response: { hasVoted: boolean, otp?: string }) => {
           clearTimeout(timeout);
           socket.off("otpResponse", onResponse);
           socket.off("otpError", onOtpError);
-          resolve(response.hasVoted);
-          console.log("Réponse OTP reçue:", response, phoneNumber);
+
           if (response.hasVoted) {
             setError("Vous avez déjà voté avec ce numéro");
             setIsLoading(false);
+            resolve(true);
             return;
           }
-          if (!response.hasVoted && response.otp) {
-            setOtpMessage("Code de validation envoyé");
 
-            const whatsappLink = sendWhatsAppLink(phoneNumber, response.otp);
-            console.log("WhatsApp link:", whatsappLink);
+          if (response.otp) {
+            try {
+              const whatsappLink = sendWhatsAppLink(phoneNumber, response.otp);
 
-            window.open(whatsappLink.whatsappLink, '_blank');
+              // Ouvrir WhatsApp dans un nouvel onglet
+              const newWindow = window.open(whatsappLink, '_blank');
+
+              if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                // Si le popup est bloqué, donner des instructions à l'utilisateur
+                setOtpMessage(`Code OTP: ${response.otp} - Ouvrez WhatsApp manuellement`);
+              } else {
+                setOtpMessage("Ouvrez WhatsApp pour voir votre code de validation");
+              }
+
+              setIsLoading(false);
+              resolve(false);
+            } catch (error) {
+              setOtpMessage(`Code OTP: ${response.otp} - Copiez ce code`);
+              setIsLoading(false);
+              resolve(false);
+            }
           } else {
-            setOtpMessage("Erreur lors de l'envoi du code OTP");
+            setError("Erreur lors de la génération du code OTP");
+            setIsLoading(false);
+            reject(new Error("Erreur lors de la génération du code OTP"));
           }
-          setIsLoading(false);
         };
 
-        // Fonction temporaire pour gérer les erreurs
-        const onOtpError = (errorMsg: string | undefined) => {
+        const onOtpError = (errorMsg: string) => {
           clearTimeout(timeout);
           socket.off("otpResponse", onResponse);
           socket.off("otpError", onOtpError);
+          setError(errorMsg || "Erreur lors de l'envoi du code OTP");
+          setIsLoading(false);
           reject(new Error(errorMsg));
         };
 
-        // Ajouter les écouteurs temporaires
         socket.on("otpResponse", onResponse);
         socket.on("otpError", onOtpError);
       });
