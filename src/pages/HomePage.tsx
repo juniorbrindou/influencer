@@ -1,7 +1,7 @@
 import React from 'react';
 import InfluenceurCard from '../components/InfluenceurCard';
 import VoteModal from '../components/VoteModal';
-import { useVote } from '../context/usevote';
+import { useVote } from '../context/useVote';
 
 const HomePage: React.FC = () => {
   const { listInfluenceur: influenceurs, selectedInfluenceur: selectedInfluenceur } = useVote();
