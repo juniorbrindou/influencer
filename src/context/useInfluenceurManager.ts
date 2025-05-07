@@ -21,9 +21,8 @@ export const useInfluenceurManager = () => {
     try {
       setIsLoading(true);
 
-      // Si imageUrl est un File, on l'upload d'abord
       let finalImageUrl = influenceur.imageUrl;
-      if (influenceur.imageUrl) {
+      if (influenceur.imageUrl instanceof File) {
         const formData = new FormData();
         formData.append('image', influenceur.imageUrl);
 
@@ -33,15 +32,12 @@ export const useInfluenceurManager = () => {
           body: formData,
         });
 
-        if (!uploadResponse.ok) {
-          throw new Error('Erreur lors de l\'upload de l\'image');
-        }
+        if (!uploadResponse.ok) throw new Error('Erreur upload image');
 
         const uploadData = await uploadResponse.json();
         finalImageUrl = uploadData.imageUrl;
       }
 
-      // Ensuite on crée l'influenceur avec l'URL de l'image
       const response = await fetch(SOCKET_URL + `/api/influenceurs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,17 +49,24 @@ export const useInfluenceurManager = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de l\'ajout');
-      }
+      if (!response.ok) throw new Error('Erreur lors de l\'ajout');
 
       const data = await response.json();
-      socket.emit("addInfluenceur", data);
+
+      // Normalise les données reçues
+      const normalizedData = {
+        ...data,
+        voteCount: data.voteCount || 0
+      };
+
+      socket.emit("addInfluenceur", normalizedData);
       setIsLoading(false);
+      return normalizedData;
     } catch (err) {
       setIsLoading(false);
-      setError("Erreur lors de l'ajout de l'influenceur");
+      setError("Erreur lors de l'ajout");
       console.error(err);
+      throw err;
     }
   };
 

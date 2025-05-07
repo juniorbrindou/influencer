@@ -343,29 +343,23 @@ app.get("/api/influenceurs", async (req, res) => {
     const influenceurs = await prisma.influenceurs.findMany({
       include: {
         votes: {
-          where: {
-            isValidated: true,
-          },
+          where: { isValidated: true },
         },
-        category: true, // Inclure les données de la catégorie
       },
     });
 
-    const influenceursWithVoteCount = influenceurs.map((influenceur) => ({
-      id: influenceur.id,
-      name: influenceur.name,
-      imageUrl: influenceur.imageUrl,
-      voteCount: influenceur.votes.length,
-      categoryId: influenceur.categoryId,
-      category: influenceur.category, // Inclure les données de la catégorie
+    const formattedInfluenceurs = influenceurs.map((inf) => ({
+      id: inf.id,
+      name: inf.name,
+      imageUrl: inf.imageUrl,
+      categoryId: inf.categoryId,
+      voteCount: inf.votes ? inf.votes.length : 0, // Sécurité supplémentaire
     }));
 
-    res.json(influenceursWithVoteCount);
+    res.json(formattedInfluenceurs);
   } catch (error) {
-    console.error("Erreur lors de la récupération des influenceurs:", error);
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la récupération des influenceurs" });
+    console.error("Erreur récupération influenceurs:", error);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
@@ -418,33 +412,23 @@ app.delete("/api/influenceurs/:id", async (req, res) => {
 app.post("/api/influenceurs", async (req, res) => {
   const { name, imageUrl, categoryId } = req.body;
 
-  // Vérification des données envoyées
   if (!name || !imageUrl || !categoryId) {
     return res
       .status(400)
-      .json({ error: "Le nom, l'image et la catégorie de l'influenceur sont requis" });
+      .json({ error: "Le nom, l'image et la catégorie sont requis" });
   }
 
   try {
-    // Vérifier si la catégorie existe
-    const category = await prisma.category.findUnique({
+    // 1. Vérifiez que la catégorie existe
+    const categoryExists = await prisma.category.findUnique({
       where: { id: categoryId },
     });
 
-    if (!category) {
+    if (!categoryExists) {
       return res.status(404).json({ error: "Catégorie non trouvée" });
     }
 
-    // Vérifier si l'influenceur existe déjà
-    const existingInfluenceur = await prisma.influenceurs.findFirst({
-      where: { name: name },
-    });
-
-    if (existingInfluenceur) {
-      return res.status(409).json({ error: "Cet influenceur existe déjà" });
-    }
-
-    // Création de l'influenceur
+    // 2. Créez l'influenceur sans inclure les votes initialement
     const newInfluenceur = await prisma.influenceurs.create({
       data: {
         name,
@@ -453,15 +437,16 @@ app.post("/api/influenceurs", async (req, res) => {
       },
     });
 
-    res.status(201).json({
-      message: "Influenceur créé avec succès",
-      influenceur: newInfluenceur,
-    });
+    // 3. Formatez la réponse avec voteCount à 0 par défaut
+    const responseData = {
+      ...newInfluenceur,
+      voteCount: 0, // Initialisation explicite à 0
+    };
 
-    // Émettre l'événement de mise à jour en temps réel
-    io.emit("influenceursUpdate", { newInfluenceur });
+    res.status(201).json(responseData);
+    io.emit("influenceursUpdate", { newInfluenceur: responseData });
   } catch (error) {
-    console.error("Erreur lors de la création de l'influenceur:", error);
+    console.error("Erreur création influenceur:", error);
     res
       .status(500)
       .json({ error: "Erreur lors de la création de l'influenceur" });

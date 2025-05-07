@@ -243,7 +243,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await fetch(BACKEND_URL + '/api/influenceurs', {
         method: 'GET',
-        credentials: 'include', // Envoyer les cookies
+        credentials: 'include',
         headers: {
           'Accept': 'application/json'
         }
@@ -254,10 +254,15 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const data = await response.json();
-      setInfluenceurs(data);
+      // S'assurer que chaque influenceur a bien un voteCount numérique
+      const formattedData = data.map((inf: { voteCount: unknown; }) => ({
+        ...inf,
+        voteCount: Number(inf.voteCount) || 0
+      }));
+      setInfluenceurs(formattedData);
     } catch (error) {
-      console.error('Erreur lors du chargement des influenceurs:', error);
-      setError('Erreur lors du chargement des influenceurs');
+      console.error('Erreur chargement influenceurs:', error);
+      setError('Erreur chargement influenceurs');
     }
   };
 

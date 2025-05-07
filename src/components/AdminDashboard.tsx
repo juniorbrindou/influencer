@@ -21,8 +21,12 @@ const AdminDashboard: React.FC = () => {
   // État pour stocker les données de l'influenceur en cours d'édition
   const [editInfluenceur, setEditInfluenceur] = useState<Influenceur | null>(null);
 
-  // Calcule le nombre total de votes en additionnant les voteCount de tous les influenceurs
-  const totalVotes = influenceurs.reduce((total, influenceur) => total + influenceur.voteCount, 0);
+
+  const totalVotes = influenceurs.reduce((total, influenceur) => {
+    // Convertir voteCount en nombre au cas où ce serait une string
+    const votes = Number(influenceur.voteCount) || 0;
+    return total + votes;
+  }, 0);
 
   // const [categories, setCategories] = useState<Category[]>([]);
   const [newCategory, setNewCategory] = useState<Partial<Category> | null>(null);
@@ -223,7 +227,7 @@ const AdminDashboard: React.FC = () => {
           {/* Carte : Total des votes */}
           <div className="bg-green-50 rounded-lg p-4">
             <p className="text-sm text-green-600 font-medium">Total des votes</p>
-            <p className="text-2xl font-bold">{totalVotes}</p>
+            <p className="text-2xl font-bold">{isNaN(totalVotes) ? 0 : totalVotes}</p>
           </div>
 
           {/* Carte : Autre statistique (nombre d'enregistrements de votes individuels) */}
@@ -517,7 +521,7 @@ const AdminDashboard: React.FC = () => {
                     id="influenceurImageAdd"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setNewInfluenceur({ ...newInfluenceur, imageUrl: e.target.files[0] as string | File});
+                        setNewInfluenceur({ ...newInfluenceur, imageUrl: e.target.files[0] as string | File });
                       }
                     }}
                     className="w-full mb-2"
