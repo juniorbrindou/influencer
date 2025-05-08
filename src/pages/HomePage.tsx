@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCategoryManager } from '../context/useCartegoryManager';
 
@@ -8,7 +8,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div>
-      {/* Hero Banner */}
+      {/* Hero Banner (inchangé) */}
       <div className="w-full h-[400px] relative mb-12">
         <img
           src="/banner.jpg"
@@ -30,32 +30,42 @@ const HomePage: React.FC = () => {
 
       {/* Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 text-center">
+        <div className="mb-8 text-center animate-fadeIn">
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Choisissez une catégorie</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Sélectionnez une catégorie pour voir les influenceurs et voter pour votre préféré.
           </p>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        {/* Nouvelle grille avec cartes prenant la moitié de l'écran */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {categories.map(category => (
             <div 
               key={category.id}
               onClick={() => navigate(`/category/${category.id}`)}
-              className="group bg-white rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-2 cursor-pointer"
+              className="group relative bg-white rounded-xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer animate-slideIn"
             >
-              <div className="h-48 overflow-hidden relative">
+              {/* Conteneur d'image avec ratio 4:3 */}
+              <div className="pb-[75%] relative overflow-hidden"> {/* 4:3 ratio */}
                 <img
                   src={category.imageUrl as string}
                   alt={category.name}
-                  className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+                  className="absolute inset-0 w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4">
-                  <h3 className="text-xl font-bold text-white group-hover:text-yellow-400 transition-colors">
-                    {category.name}
-                  </h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6">
+                  <div className="w-full">
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 transition-colors group-hover:text-yellow-400">
+                      {category.name}
+                    </h3>
+                    <div className="h-1.5 w-20 bg-yellow-400 mb-3 transform transition-all duration-500 group-hover:w-28"></div>
+                    <span className="text-white/90 text-base font-medium inline-flex items-center">
+                      Voter maintenant
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 group-hover:translate-x-2 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

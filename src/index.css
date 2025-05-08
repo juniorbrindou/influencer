@@ -23,3 +23,50 @@
 .animate-slideIn {
   animation: slideIn 0.5s ease-out;
 }
+
+
+
+/* Ajoutez ceci à la fin de votre fichier index.css */
+
+.animated-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(
+    135deg,
+    #000000 0%,
+    #1a1a1a 25%,
+    #2d2d2d 50%,
+    #1a1a1a 75%,
+    #000000 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  opacity: 0.95;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Pour le contenu au premier plan */
+.foreground-content {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+/* Adaptez la transparence selon les pages */
+.dark-bg-page .foreground-content {
+  background-color: rgba(0, 0, 0, 0.7);
+}

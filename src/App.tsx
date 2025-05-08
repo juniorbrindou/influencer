@@ -8,21 +8,26 @@ import ResultsPage from './pages/ResultsPage';
 import AdminPage from './pages/AdminPage';
 import HomePage from './pages/HomePage';
 import CategoryPage from './pages/CategoryPage';
+import AnimatedBackground from './components/AnimatedBackground';
 
 function App() {
   return (
     <VoteProvider>
       <Router>
-        <div className="min-h-screen flex flex-col bg-gray-100">
+        <AnimatedBackground />
+        {/* Fond animé */}
+        <div className="animated-bg"></div>
+
+        <div className="min-h-screen flex flex-col">
           <Header />
 
           <main className="flex-grow">
             <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/category/:id" element={<CategoryPage />} />
-              <Route path="/confirmation" element={<ConfirmationPage />} />
-              <Route path="/results" element={<ResultsPage />} />
-              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/" element={<div className="foreground-content"><HomePage /></div>} />
+              <Route path="/category/:id" element={<div className="foreground-content dark-bg-page"><CategoryPage /></div>} />
+              <Route path="/confirmation" element={<div className="foreground-content"><ConfirmationPage /></div>} />
+              <Route path="/results" element={<div className="foreground-content"><ResultsPage /></div>} />
+              <Route path="/admin" element={<div className="foreground-content"><AdminPage /></div>} />
             </Routes>
           </main>
 
