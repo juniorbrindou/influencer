@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; // Hook pour la navigation
 import { useVote } from '../context/useVote';
@@ -12,8 +12,8 @@ const VoteModal: React.FC = () => {
     resetSelection, // La fonction pour fermer la modale et réinitialiser la sélection
     requestOTP, // La fonction pour demander un code OTP (One Time Password)
     validateOTP, // Ajoutez cette ligne
+    otpMessage
   } = useVote();
-
   // États locaux pour gérer le formulaire
   const [isSubmitting, setIsSubmitting] = useState(false); // Indique si le formulaire est en cours de soumission
   const [error, setError] = useState<string | null>(null); // Stocke les messages d'erreur
@@ -28,8 +28,15 @@ const VoteModal: React.FC = () => {
     { code: '+33', name: 'France' },
     // Ajoutez d'autres pays au besoin
   ];
-  const [selectedCountryCode] = useState('+225');
   const { countryCode, setCountryCode } = useVote();
+
+  // Utilisez useEffect pour synchroniser les états
+  useEffect(() => {
+    if (otpMessage === 'Code de validation envoyé') {
+      setVerificationStep(true);
+      setIsSubmitting(false);
+    }
+  }, [otpMessage]);
 
   // Si aucun influenceur n'est sélectionné, la modale n'est pas affichée
   if (!selectedInfluenceur) return null;
@@ -38,21 +45,26 @@ const VoteModal: React.FC = () => {
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsSubmitting(true);
 
-    // Validation du numéro (uniquement des chiffres)
     if (!/^\d+$/.test(phoneNumber)) {
       setError('Numéro invalide (chiffres uniquement)');
+      setIsSubmitting(false);
       return;
     }
 
-    // Vérification du vote existant
-    if (await requestOTP(selectedInfluenceur, phoneNumber)) {
-      setError('Vous avez déjà voté avec ce numéro');
-      return;
+    try {
+      const hasVoted = await requestOTP(selectedInfluenceur, phoneNumber);
+      if (hasVoted) {
+        setError('Vous avez déjà voté avec ce numéro');
+      }
+      // La transition vers verificationStep sera gérée par le useEffect
+    } catch (error) {
+      setError('Erreur lors de la demande de code');
+      setIsSubmitting(false);
     }
-
-    setVerificationStep(true);
   };
+
 
   // Gère la soumission du formulaire de code de vérification
   const handleCodeSubmit = async (e: React.FormEvent) => {

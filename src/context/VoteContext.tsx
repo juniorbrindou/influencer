@@ -190,7 +190,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [socket]);
 
-// #endSection Configurer les écouteurs de socket.io
+  // #endSection Configurer les écouteurs de socket.io
 
   // Ajoutez ces fonctions
   const addCategory = async (category: Partial<Category>) => {
@@ -422,38 +422,44 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
  * @throws {Error} Si la requête échoue
  */
   const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
-  if (!selectedInfluenceur || !phoneNumberWithoutCode) {
-    setError("Sélectionnez un influenceur et entrez un numéro");
-    return false;
-  }
+    if (!selectedInfluenceur || !phoneNumberWithoutCode) {
+      setError("Sélectionnez un influenceur et entrez un numéro");
+      return false;
+    }
 
-  try {
-    setIsLoading(true);
-    setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
-    console.log("📞 Numéro complet:", fullPhoneNumber);
+      const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
+      console.log("📞 Numéro complet:", fullPhoneNumber);
 
-    socket.emit("requestOTP", {
-      phoneNumber: fullPhoneNumber,
-      influenceurId: selectedInfluenceur.id
-    });
+      socket.emit("requestOTP", {
+        phoneNumber: fullPhoneNumber,
+        influenceurId: selectedInfluenceur.id
+      });
 
-    return new Promise((resolve) => {
-      const onResponse = (response: { hasVoted: boolean }) => {
-        socket.off("otpResponse", onResponse);
-        resolve(response.hasVoted); // Retourne true si déjà voté
-      };
+      return new Promise((resolve) => {
+        const onResponse = (response: { hasVoted: boolean }) => {
+          socket.off("otpResponse", onResponse);
+          resolve(response.hasVoted);
+        };
 
-      socket.on("otpResponse", onResponse);
-    });
+        socket.on("otpResponse", onResponse);
 
-  } catch (error) {
-    setIsLoading(false);
-    setError("Erreur réseau");
-    throw error;
-  }
-};
+        // Écoute également otpSent pour confirmer l'envoi
+        const onOtpSent = () => {
+          socket.off("otpSent", onOtpSent);
+          resolve(false); // Pas de vote existant
+        };
+        socket.on("otpSent", onOtpSent);
+      });
+    } catch (error) {
+      setIsLoading(false);
+      setError("Erreur réseau");
+      throw error;
+    }
+  };
 
   /**
    * Fonction pour valider le code OTP via socket.io
