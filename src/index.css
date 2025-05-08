@@ -70,3 +70,15 @@
 .dark-bg-page .foreground-content {
   background-color: rgba(0, 0, 0, 0.7);
 }
+
+/* Assure que le contenu est cliquable */
+.clickable-content {
+  position: relative;
+  z-index: 30;
+}
+
+/* Version alternative plus visible */
+.foreground-particles {
+  opacity: 0.7 !important;
+  mix-blend-mode: screen;
+}

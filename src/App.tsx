@@ -8,20 +8,14 @@ import ResultsPage from './pages/ResultsPage';
 import AdminPage from './pages/AdminPage';
 import HomePage from './pages/HomePage';
 import CategoryPage from './pages/CategoryPage';
-import AnimatedBackground from './components/AnimatedBackground';
-
+import ForegroundAnimation from './components/AnimatedBackground';
 function App() {
   return (
     <VoteProvider>
       <Router>
-        <AnimatedBackground />
-        {/* Fond animé */}
-        <div className="animated-bg"></div>
-
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col relative">
           <Header />
-
-          <main className="flex-grow">
+          <main className="flex-grow z-10">
             <Routes>
               <Route path="/" element={<div className="foreground-content"><HomePage /></div>} />
               <Route path="/category/:id" element={<div className="foreground-content dark-bg-page"><CategoryPage /></div>} />
@@ -32,6 +26,8 @@ function App() {
           </main>
 
           <Footer />
+          {/* Animation en premier plan MAIS derrière le contenu */}
+          <ForegroundAnimation />
         </div>
       </Router>
     </VoteProvider>
