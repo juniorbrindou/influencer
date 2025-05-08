@@ -7,27 +7,19 @@ import dotenv from "dotenv";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 dotenv.config();
+
+// Obtenir __dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 
 const prisma = new PrismaClient();
 const app = express();
 const httpServer = createServer(app);
-
-// Configuration du stockage des fichiers
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = "public/uploads";
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
 
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
@@ -48,19 +40,54 @@ app.use(
 );
 app.use(express.json());
 
-const upload = multer({ storage });
 
-app.post("/api/upload", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "Aucun fichier téléchargé" });
-  }
 
-  const imageUrl = `/uploads/${req.file.filename}`;
-  res.json({ imageUrl });
+// Configuration de Multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, "public", "uploads");
+    fs.mkdirSync(uploadDir, { recursive: true });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9) + ext;
+    cb(null, uniqueName);
+  },
 });
 
-// Servir les fichiers statiques
-app.use("/uploads", express.static("public/uploads"));
+
+
+const upload = multer({ storage });
+
+// Middleware pour servir les fichiers statiques
+app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
+
+
+// Route d'upload
+app.post("/api/upload", upload.single("image"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "Aucun fichier reçu." });
+  }
+  res.json({ 
+    success: true,
+    url: `/uploads/${req.file.filename}`
+  });
+});
+
+
+
+
+
+// app.post("/api/upload", upload.single("image"), (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).json({ error: "Aucun fichier téléchargé" });
+//   }
+
+//   const imageUrl = `/uploads/${req.file.filename}`;
+//   res.json({ imageUrl });
+// });
+
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
