@@ -7,6 +7,7 @@ import ConfirmationPage from './pages/ConfirmationPage';
 import ResultsPage from './pages/ResultsPage';
 import AdminPage from './pages/AdminPage';
 import HomePage from './pages/HomePage';
+import CategoryPage from './pages/CategoryPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/category/:id" element={<CategoryPage />} />
               <Route path="/confirmation" element={<ConfirmationPage />} />
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/admin" element={<AdminPage />} />

@@ -1,10 +1,10 @@
-import React from 'react';
-import InfluenceurCard from '../components/InfluenceurCard';
-import VoteModal from '../components/VoteModal';
-import { useVote } from '../context/useVote';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCategoryManager } from '../context/useCartegoryManager';
 
 const HomePage: React.FC = () => {
-  const { listInfluenceur: influenceurs, selectedInfluenceur: selectedInfluenceur } = useVote();
+  const { categories } = useCategoryManager();
+  const navigate = useNavigate();
 
   return (
     <div>
@@ -31,21 +31,36 @@ const HomePage: React.FC = () => {
       {/* Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Votez pour votre influenceur préféré</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Choisissez une catégorie</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Soutenez vos influenceurs préférés en votant pour eux. C'est gratuit et sans création de compte.
+            Sélectionnez une catégorie pour voir les influenceurs et voter pour votre préféré.
           </p>
         </div>
 
-        {/* Influenceur Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {influenceurs.map(influenceur => (
-            <InfluenceurCard key={influenceur.id} influenceur={influenceur} />
+        {/* Categories Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          {categories.map(category => (
+            <div 
+              key={category.id}
+              onClick={() => navigate(`/category/${category.id}`)}
+              className="group bg-white rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-2 cursor-pointer"
+            >
+              <div className="h-48 overflow-hidden relative">
+                <img
+                  src={category.imageUrl as string}
+                  alt={category.name}
+                  className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4">
+                  <h3 className="text-xl font-bold text-white group-hover:text-yellow-400 transition-colors">
+                    {category.name}
+                  </h3>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
-
-        {/* Vote Modal */}
-        {selectedInfluenceur && <VoteModal />}
       </div>
     </div>
   );

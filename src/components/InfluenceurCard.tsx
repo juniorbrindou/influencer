@@ -3,34 +3,19 @@ import { Influenceur } from '../types';
 import { useVote } from '../context/useVote';
 
 interface InfluenceurCardProps {
-   /**
-   * L'objet influenceur contenant les informations à afficher (nom, image).
-   * Cet objet est passé en prop par le composant parent (probablement une liste d'influenceurs).
-   */
   influenceur: Influenceur;
 }
 
-/**
- * Composant InfluenceurCard : Affiche une carte individuelle pour un influenceur.
- * Inclut son image, son nom et un bouton pour voter pour lui.
- *
- * @param props Les propriétés passées au composant, contenant l'objet influenceur.
- */
-const InfluenceurCard: React.FC<InfluenceurCardProps> = ({ influenceur: influenceur }) => {
-
-  // Extrait la fonction selectInfluenceur depuis le contexte de vote
-  // Cette fonction sera appelée lors du clic sur le bouton "Voter"
-  const { selectInfluenceur: selectInfluenceur } = useVote();
+const InfluenceurCard: React.FC<InfluenceurCardProps> = ({ influenceur }) => {
+  const { selectInfluenceur } = useVote();
 
   return (
     <div className="group bg-white rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-2">
       <div className="h-48 overflow-hidden">
         <img
-          src={influenceur.imageUrl}
+          src={influenceur.imageUrl as string}
           alt={`Photo de ${influenceur.name}`}
           className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
-
-          // Attribut pour le chargement différé (lazy loading) des images hors écran (améliore les performances)
           loading="lazy"
         />
       </div>
