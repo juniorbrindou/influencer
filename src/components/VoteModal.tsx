@@ -9,12 +9,9 @@ const VoteModal: React.FC = () => {
     selectedInfluenceur: selectedInfluenceur, // L'influenceur sélectionné pour le vote
     phoneNumber, // L'état du numéro de téléphone depuis le contexte
     setPhoneNumber, // La fonction pour mettre à jour le numéro de téléphone dans le contexte
-    submitVote, // La fonction pour soumettre le vote
     resetSelection, // La fonction pour fermer la modale et réinitialiser la sélection
     requestOTP, // La fonction pour demander un code OTP (One Time Password)
     validateOTP, // Ajoutez cette ligne
-    error: contextError, // Renommez error pour éviter les conflits
-    otpMessage, // Ajoutez si nécessaire
   } = useVote();
 
   // États locaux pour gérer le formulaire
@@ -26,29 +23,35 @@ const VoteModal: React.FC = () => {
   // Hook pour la navigation programmatique
   const navigate = useNavigate();
 
+  const countryCodes = [
+    { code: '+225', name: 'Côte d\'Ivoire' },
+    { code: '+33', name: 'France' },
+    // Ajoutez d'autres pays au besoin
+  ];
+  const [selectedCountryCode] = useState('+225');
+  const { countryCode, setCountryCode } = useVote();
+
   // Si aucun influenceur n'est sélectionné, la modale n'est pas affichée
   if (!selectedInfluenceur) return null;
 
   // Gère la soumission du formulaire de numéro de téléphone
   const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Empêche le rechargement de la page
-    setError(null); // Réinitialise les erreurs
+    e.preventDefault();
+    setError(null);
 
-    // Validation du format du numéro de téléphone
-    if (!/^\+?[0-9]{10,15}$/.test(phoneNumber)) {
-      setError('Veuillez entrer un numéro WhatsApp valide');
-      return; // Arrête l'exécution si la validation échoue
+    // Validation du numéro (uniquement des chiffres)
+    if (!/^\d+$/.test(phoneNumber)) {
+      setError('Numéro invalide (chiffres uniquement)');
+      return;
     }
 
-    // Vérifie si le numéro a déjà voté
+    // Vérification du vote existant
     if (await requestOTP(selectedInfluenceur, phoneNumber)) {
       setError('Vous avez déjà voté avec ce numéro');
-      return; // Arrête l'exécution si le numéro a déjà voté
+      return;
     }
 
-    // Passe à l'étape de vérification si tout est bon
     setVerificationStep(true);
-    // Idéalement, ici on déclencherait l'envoi du code par WhatsApp
   };
 
   // Gère la soumission du formulaire de code de vérification
@@ -105,15 +108,27 @@ const VoteModal: React.FC = () => {
                   Votre numéro WhatsApp
                 </label>
                 {/* Champ de saisie du numéro de téléphone */}
-                <input
-                  type="tel" // Type "tel" approprié pour les numéros de téléphone
-                  id="phone"
-                  placeholder="+225 9999999999"
-                  value={phoneNumber} // Lié à l'état phoneNumber du contexte
-                  onChange={(e) => setPhoneNumber(e.target.value)} // Met à jour l'état phoneNumber
-                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-300 ${error ? 'border-red-500' : 'border-gray-300'
-                    }`} // Styles conditionnels pour la bordure en cas d'erreur
-                />
+                <div className="flex gap-2">
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="px-2 py-2 border rounded-md"
+                  >
+                    {countryCodes.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.code} ({country.name})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                    placeholder="00 00 00 00"
+                    maxLength={10} // Limite la saisie à 10 chiffres
+                    className="w-full px-4 py-2 border rounded-md"
+                  />
+                </div>
                 {/* Affichage de l'erreur si elle existe */}
                 {error && <p className="mt-2 text-sm text-red-600 animate-shake">{error}</p>}
               </div>

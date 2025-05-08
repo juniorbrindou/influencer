@@ -25,6 +25,8 @@ interface VoteContextType {
   addCategory: (category: Partial<Category>) => Promise<void>;
   removeCategory: (id: string) => Promise<void>;
   updateCategory: (category: Category) => Promise<void>;
+  countryCode: string;
+  setCountryCode: (code: string) => void;
 }
 
 export const VoteContext = createContext<VoteContextType | undefined>(undefined);
@@ -57,14 +59,14 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [receivedOTP, setReceivedOTP] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-
+  const [countryCode, setCountryCode] = useState<string>('+225');
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     localStorage.setItem("votes", JSON.stringify(votes));
   }, [votes]);
 
-  // Configurer les écouteurs de socket.io
+  // #section Configurer les écouteurs de socket.io
   useEffect(() => {
     // Gestion des événements de connexion
     socket.on("connect", () => {
@@ -188,7 +190,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [socket]);
 
-
+// #endSection Configurer les écouteurs de socket.io
 
   // Ajoutez ces fonctions
   const addCategory = async (category: Partial<Category>) => {
@@ -286,42 +288,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setReceivedOTP(null);
   };
 
-
-  // Ajoutez en haut de votre fichier
-
-  // Fonction d'envoi
-  const sendWhatsAppLink = (phoneNumber: string, otp: string): string => {
-    try {
-      // Nettoyer et formater le numéro de téléphone
-      let formattedPhone = phoneNumber.trim();
-
-      // Supprimer tous les caractères non numériques sauf le +
-      formattedPhone = formattedPhone.replace(/[^\d+]/g, '');
-
-      // Remplacer le préfixe 00 par + si présent
-      if (formattedPhone.startsWith('00')) {
-        formattedPhone = '+' + formattedPhone.substring(2);
-      }
-
-      // Ajouter l'indicatif par défaut si aucun indicatif international n'est présent
-      if (!formattedPhone.startsWith('+')) {
-        formattedPhone = '+225' + formattedPhone; // +225 pour la Côte d'Ivoire
-      }
-
-      // Vérifier que le numéro est valide
-      if (formattedPhone.length < 8) {
-        throw new Error('Numéro de téléphone trop court');
-      }
-
-      const message = `Votre code de validation est : ${otp}\n\nCe code est valable 5 minutes.`;
-      const encodedMessage = encodeURIComponent(message);
-
-      return `https://wa.me/${formattedPhone}?text=${encodedMessage}`;
-    } catch (error) {
-      console.error('Erreur lors de la génération du lien WhatsApp:', error);
-      throw new Error('Erreur lors de la préparation du message WhatsApp');
-    }
-  };
   // -------------------Influenceur ------------------- //
 
   /**
@@ -455,89 +421,39 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
  * @returns {Promise<boolean>} - true si le numéro a déjà voté, false sinon
  * @throws {Error} Si la requête échoue
  */
-  const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumber: string): Promise<boolean> => {
-    if (!selectedInfluenceur || !phoneNumber) {
-      setError("Sélectionnez un influenceur et entrez un numéro de téléphone");
-      return false;
-    }
+  const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
+  if (!selectedInfluenceur || !phoneNumberWithoutCode) {
+    setError("Sélectionnez un influenceur et entrez un numéro");
+    return false;
+  }
 
-    try {
-      setIsLoading(true);
-      setError(null);
-      setOtpMessage('');
+  try {
+    setIsLoading(true);
+    setError(null);
 
-      // Utiliser socket.io pour demander l'OTP
-      socket.emit("requestOTP", {
-        phoneNumber: phoneNumber,
-        influenceurId: selectedInfluenceur.id
-      });
+    const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
+    console.log("📞 Numéro complet:", fullPhoneNumber);
 
-      return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error("Délai d'attente dépassé pour la demande d'OTP"));
-          setIsLoading(false);
-          setError("Délai d'attente dépassé pour la demande d'OTP");
-        }, 10000); // 10 secondes de timeout
+    socket.emit("requestOTP", {
+      phoneNumber: fullPhoneNumber,
+      influenceurId: selectedInfluenceur.id
+    });
 
-        const onResponse = (response: { hasVoted: boolean, otp?: string }) => {
-          clearTimeout(timeout);
-          socket.off("otpResponse", onResponse);
-          socket.off("otpError", onOtpError);
+    return new Promise((resolve) => {
+      const onResponse = (response: { hasVoted: boolean }) => {
+        socket.off("otpResponse", onResponse);
+        resolve(response.hasVoted); // Retourne true si déjà voté
+      };
 
-          if (response.hasVoted) {
-            setError("Vous avez déjà voté avec ce numéro");
-            setIsLoading(false);
-            resolve(true);
-            return;
-          }
+      socket.on("otpResponse", onResponse);
+    });
 
-          if (response.otp) {
-            try {
-              const whatsappLink = sendWhatsAppLink(phoneNumber, response.otp);
-
-              // Ouvrir WhatsApp dans un nouvel onglet
-              const newWindow = window.open(whatsappLink, '_blank');
-
-              if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                // Si le popup est bloqué, donner des instructions à l'utilisateur
-                setOtpMessage(`Code OTP: ${response.otp} - Ouvrez WhatsApp manuellement`);
-              } else {
-                setOtpMessage("Ouvrez WhatsApp pour voir votre code de validation");
-              }
-
-              setIsLoading(false);
-              resolve(false);
-            } catch {
-              setOtpMessage(`Code OTP: ${response.otp} - Copiez ce code`);
-              setIsLoading(false);
-              resolve(false);
-            }
-          } else {
-            setError("Erreur lors de la génération du code OTP");
-            setIsLoading(false);
-            reject(new Error("Erreur lors de la génération du code OTP"));
-          }
-        };
-
-        const onOtpError = (errorMsg: string) => {
-          clearTimeout(timeout);
-          socket.off("otpResponse", onResponse);
-          socket.off("otpError", onOtpError);
-          setError(errorMsg || "Erreur lors de l'envoi du code OTP");
-          setIsLoading(false);
-          reject(new Error(errorMsg));
-        };
-
-        socket.on("otpResponse", onResponse);
-        socket.on("otpError", onOtpError);
-      });
-    } catch (error) {
-      setIsLoading(false);
-      console.error('Erreur lors de la vérification du vote:', error);
-      setError('Erreur lors de la vérification du vote');
-      throw error;
-    }
-  };
+  } catch (error) {
+    setIsLoading(false);
+    setError("Erreur réseau");
+    throw error;
+  }
+};
 
   /**
    * Fonction pour valider le code OTP via socket.io
@@ -561,6 +477,14 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phoneNumber,
         otp
       });
+
+      socket.emit("validateOTP", {
+        phoneNumber: `${countryCode}${phoneNumber}`, // Format cohérent
+        otp
+      });
+      console.log("numéro de téléphone:", phoneNumber);
+      console.log("Numéro de téléphone formaté:", `${countryCode}${phoneNumber}`);
+
       console.log("Validation de l'OTP:", otp);
 
 
@@ -595,7 +519,9 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         categories,
         addCategory,
         removeCategory,
-        updateCategory
+        updateCategory,
+        countryCode,
+        setCountryCode,
       }}
     >
       {socketConnected ? null : (

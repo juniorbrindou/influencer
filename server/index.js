@@ -9,8 +9,13 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import twilio from "twilio";
 
 dotenv.config();
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 // Obtenir __dirname en ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -135,68 +140,76 @@ io.on("connection", (socket) => {
     }
 
     try {
-      // 1. Vérifier d'abord s'il existe un vote validé
+      // 1. Vérifier si l'utilisateur a déjà voté
       const existingVote = await prisma.votes.findFirst({
         where: { phoneNumber },
       });
 
-      // 2. Si vote déjà validé → erreur
       if (existingVote?.isValidated) {
         socket.emit("otpResponse", { hasVoted: true });
         return;
       }
 
-      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      // 2. Générer un OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-      // 3. Cas où un OTP existe mais n'est pas validé
-      if (existingVote && !existingVote.isValidated) {
-        // Vérifier si l'OTP existant est encore valide
-        const isOtpStillValid = existingVote.otpExpiresAt > new Date();
-
-        const otpToSend = isOtpStillValid
-          ? existingVote.otp
-          : Math.floor(100000 + Math.random() * 900000).toString();
-
-        // Mettre à jour l'enregistrement
-        await prisma.votes.update({
-          where: { id: existingVote.id },
-          data: {
-            otp: otpToSend,
-            otpExpiresAt,
-            influenceurId, // Au cas où l'influenceur change
-          },
-        });
-
-        console.log(
-          `📲 OTP ${
-            isOtpStillValid ? "existant" : "regénéré"
-          } pour ${phoneNumber}: ${otpToSend}`
-        );
-        socket.emit("otpSent", otpToSend);
-        socket.emit("otpResponse", { hasVoted: false, otp: otpToSend });
-        return;
-      }
-
-      // 4. Cas où aucun enregistrement n'existe pas → création
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
-      await prisma.votes.create({
-        data: {
-          influenceurId,
-          phoneNumber,
-          otp: newOtp,
-          otpExpiresAt,
-          isValidated: false,
-        },
+      // 3. Logger les détails avant l'envoi
+      console.log("📤 Tentative d'envoi WhatsApp via Twilio:", {
+        to: phoneNumber,
+        body: `Votre code de vérification est : ${otp}`,
+        from: process.env.TWILIO_WHATSAPP_NUMBER,
       });
 
-      console.log(`📲 Nouvel OTP pour ${phoneNumber}: ${newOtp}`);
-      socket.emit("otpSent", newOtp);
-      socket.emit("otpResponse", { hasVoted: false, otp: newOtp });
-      return;
+      // 4. Envoyer l'OTP via Twilio
+      const twilioResponse = await twilioClient.messages.create({
+        body: `Votre code de vérification est : ${otp}. Valide 5 minutes.`,
+        from: process.env.TWILIO_WHATSAPP_NUMBER,
+        to: `whatsapp:${phoneNumber}`,
+      });
+
+      socket.emit("otpSent", otp); // Événement déjà écouté par le frontend
+      console.log("📢 Émission Socket.IO : otpSent", otp);
+      
+
+      // 5. Logger la réponse de Twilio
+      console.log("✅ Réponse Twilio:", {
+        status: twilioResponse.status,
+        sid: twilioResponse.sid,
+        dateSent: twilioResponse.dateSent,
+        errorMessage: twilioResponse.errorMessage,
+      });
+
+      // 6. Sauvegarder en base de données
+      if (existingVote) {
+        await prisma.votes.update({
+          where: { id: existingVote.id },
+          data: { otp, otpExpiresAt, influenceurId },
+        });
+      } else {
+        await prisma.votes.create({
+          data: {
+            influenceurId,
+            phoneNumber,
+            otp,
+            otpExpiresAt,
+            isValidated: false,
+          },
+        });
+      }
+
+      socket.emit("otpSent", otp); // Confirmation au client
     } catch (err) {
-      console.error("Erreur OTP:", err);
-      socket.emit("otpError", "Erreur d'envoi OTP");
+      // 7. Logger les erreurs Twilio en détail
+      console.error("❌ Erreur Twilio:", {
+        message: err.message,
+        code: err.code,
+        stack: err.stack,
+        phoneNumber,
+        twilioNumber: process.env.TWILIO_WHATSAPP_NUMBER,
+      });
+
+      socket.emit("otpError", "Échec d'envoi du code. Veuillez réessayer.");
     }
   });
 
