@@ -25,7 +25,7 @@ function App() {
             </Routes>
           </main>
 
-          <Footer />
+          <Footer className='hidden md:block' />
           {/* Animation en premier plan MAIS derrière le contenu */}
           <ForegroundAnimation />
         </div>

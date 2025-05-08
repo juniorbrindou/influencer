@@ -14,7 +14,7 @@ const Header: React.FC = () => {
             alt="Influenceur de l'année"
             className="h-12 w-auto"
           />
-          <div className="text-white">
+          <div className="text-white hidden md:block">
             <h1 className="text-xl font-bold">Influenceur de l'année</h1>
             <p className="text-sm text-yellow-500">1ère Édition</p>
           </div>

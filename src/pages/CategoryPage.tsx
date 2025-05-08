@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import InfluenceurCard from '../components/InfluenceurCard';
 import VoteModal from '../components/VoteModal';
 import { useVote } from '../context/useVote';
@@ -7,7 +7,6 @@ import { useCategoryManager } from '../context/useCartegoryManager';
 
 const CategoryPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { listInfluenceur: influenceurs, selectedInfluenceur } = useVote();
   const { categories } = useCategoryManager();
 
