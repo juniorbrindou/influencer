@@ -7,15 +7,14 @@ import dotenv from "dotenv";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 dotenv.config();
 
 // Obtenir __dirname en ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
 
 const prisma = new PrismaClient();
 const app = express();
@@ -40,12 +39,10 @@ app.use(
 );
 app.use(express.json());
 
-
-
-// Configuration de Multer
+// Configuration de Multer (remplacez la section existante)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, "public", "uploads");
+    const uploadDir = path.join(process.cwd(), "public", "uploads");
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
@@ -56,38 +53,25 @@ const storage = multer.diskStorage({
   },
 });
 
-
+// Middleware pour servir les fichiers statiques (remplacez la section existante)
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "public", "uploads"))
+);
 
 const upload = multer({ storage });
 
 // Middleware pour servir les fichiers statiques
-app.use("/uploads", express.static(path.join(__dirname, "public", "uploads")));
-
 
 // Route d'upload
 app.post("/api/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: "Aucun fichier reçu." });
+    return res.status(400).json({ error: "Aucun fichier téléchargé" });
   }
-  res.json({ 
-    success: true,
-    url: `/uploads/${req.file.filename}`
-  });
+
+  const imageUrl = `/uploads/${req.file.filename}`;
+  res.json({ imageUrl });
 });
-
-
-
-
-
-// app.post("/api/upload", upload.single("image"), (req, res) => {
-//   if (!req.file) {
-//     return res.status(400).json({ error: "Aucun fichier téléchargé" });
-//   }
-
-//   const imageUrl = `/uploads/${req.file.filename}`;
-//   res.json({ imageUrl });
-// });
-
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
@@ -336,19 +320,29 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-// app.post("/api/categories", async (req, res) => {
-//   const { name } = req.body;
-//   try {
-//     const category = await prisma.category.create({
-//       data: { name },
-//     });
-//     res.json(category);
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ error: "Erreur lors de la création de la catégorie" });
-//   }
-// });
+// Route pour créer une catégorie (remplacez la section commentée)
+app.post("/api/categories", async (req, res) => {
+  const { name, imageUrl } = req.body;
+
+  if (!name || !imageUrl) {
+    return res.status(400).json({ error: "Le nom et l'image sont requis" });
+  }
+
+  try {
+    const category = await prisma.category.create({
+      data: { name, imageUrl },
+    });
+
+    // Émettre l'événement Socket.IO pour la mise à jour en temps réel
+    io.emit("categoriesUpdate", { newCategory: category });
+
+    res.json(category);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la création de la catégorie" });
+  }
+});
 
 // app.delete("/api/categories/:id", async (req, res) => {
 //   const { id } = req.params;
