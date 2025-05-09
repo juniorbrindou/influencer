@@ -6,12 +6,21 @@ interface ResultsChartProps {
 }
 
 const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
-  const { listInfluenceur: listInfluenceurs } = useVote();
+  const { listInfluenceur: listInfluenceurs, categories  } = useVote();
   
   // Filtrer les influenceurs par catégorie
   const influenceursByCategory = listInfluenceurs.filter(
     (influenceur) => influenceur.categoryId === categoryId
   );
+  
+   // Trouver la catégorie spéciale
+  const specialCategory = categories.find(cat => cat.name === "Influenceur2lannee");
+  
+  // Si c'est la catégorie spéciale, on prend tous les influenceurs
+  const influenceursToShow = categoryId === specialCategory?.id 
+    ? [...listInfluenceurs] // Tous les influenceurs
+    : listInfluenceurs.filter(inf => inf.categoryId === categoryId); // Filtre normal
+
 
   // État local pour stocker les influenceurs triés par nombre de votes
   const [sortedInfluenceurs, setSortedInfluenceurs] = useState(
@@ -21,8 +30,8 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
   const [animatedBars, setAnimatedBars] = useState<boolean>(false);
 
   // Calcul du total des votes pour la catégorie
-  const totalVotes = influenceursByCategory.reduce(
-    (total, influenceur) => total + influenceur.voteCount,
+  const totalVotes = influenceursToShow.reduce(
+    (total, influenceur) => total + influenceur.voteCount, 
     0
   );
 

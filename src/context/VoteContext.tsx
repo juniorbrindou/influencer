@@ -27,6 +27,11 @@ interface VoteContextType {
   updateCategory: (category: Category) => Promise<void>;
   countryCode: string;
   setCountryCode: (code: string) => void;
+
+  offerSecondVote: boolean;
+  setOfferSecondVote: (val: boolean) => void;
+  specialVote: boolean;
+  setSpecialVote: (val: boolean) => void;
 }
 
 export const VoteContext = createContext<VoteContextType | undefined>(undefined);
@@ -61,6 +66,9 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [categories, setCategories] = useState<Category[]>([]);
   const [countryCode, setCountryCode] = useState<string>('+225');
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+  const [offerSecondVote, setOfferSecondVote] = useState(false);
+  const [specialVote, setSpecialVote] = useState(false);
+
 
   useEffect(() => {
     localStorage.setItem("votes", JSON.stringify(votes));
@@ -108,6 +116,11 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
           inf.id === data.updatedInfluenceur.id ? data.updatedInfluenceur : inf
         ));
       }
+    });
+
+
+    socket.on("offerSecondVote", (data) => {
+      setOfferSecondVote(data.canVoteSpecial);
     });
 
 
@@ -450,13 +463,15 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       setError(null);
 
-      // Utiliser socket.io pour soumettre le vote
       socket.emit("submitVote", {
         influenceurId: selectedInfluenceur.id,
-        phoneNumber: phoneNumber
+        phoneNumber: phoneNumber,
+        isSpecialVote: specialVote // On envoie cette information au backend
       });
 
-      // La réponse sera traitée par les gestionnaires d'événements socket
+      // Réinitialiser le flag après le vote
+      setSpecialVote(false);
+
     } catch (error) {
       setIsLoading(false);
       console.error('Erreur lors du vote:', error);

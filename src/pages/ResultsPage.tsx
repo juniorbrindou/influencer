@@ -38,8 +38,13 @@ const ResultsPage: React.FC = () => {
             onChange={(e) => setSelectedCategory(e.target.value)}
           >
             {categories.map((category) => (
-              <option key={category.id} value={category.id}>
+              <option
+                key={category.id}
+                value={category.id}
+                className={category.name === "Influenceur2lannee" ? "font-bold text-[#6C63FF]" : ""}
+              >
                 {category.name}
+                {category.name === "Influenceur2lannee" && " ★"}
               </option>
             ))}
           </select>
