@@ -110,6 +110,29 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+
+
+    // Écouteur pour les mises à jour de catégories
+
+    socket.on("categoriesUpdate", (data) => {
+      if (data.newCategory) {
+        setCategories(prev => [...prev, data.newCategory]);
+      }
+
+      if (data.deletedCategoryId) {
+        setCategories(prev => prev.filter(cat => cat.id !== data.deletedCategoryId));
+      }
+
+      if (data.updatedCategory) {
+        setCategories(prev => prev.map(cat =>
+          cat.id === data.updatedCategory.id ? data.updatedCategory : cat
+        ));
+      }
+    });
+    // fin de l'écouteur pour les mises à jour de catégories
+
+
+
     // Écouteurs spécifiques au processus de vote
     socket.on("otpSent", (otp) => {
       console.log("OTP reçu:", otp);
@@ -231,7 +254,33 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(BACKEND_URL + '/api/categories', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
 
+      if (!response.ok) {
+        throw new Error(`Erreur réseau: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error('Erreur chargement catégories:', error);
+      setError('Erreur chargement catégories');
+    }
+  };
+
+  // Appelez cette fonction dans un useEffect
+  useEffect(() => {
+    fetchCategories();
+    fetchInfluenceurs();
+  }, []);
 
 
   /**

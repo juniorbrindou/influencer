@@ -386,8 +386,8 @@ app.get("/api/influenceurs", async (req, res) => {
       id: inf.id,
       name: inf.name,
       imageUrl: inf.imageUrl,
-      categoryId: inf.categoryId,
-      voteCount: inf.votes ? inf.votes.length : 0, // Sécurité supplémentaire
+      categoryId: inf.categoryId, // Assurez-vous que cette propriété est incluse
+      voteCount: inf.votes ? inf.votes.length : 0,
     }));
 
     res.json(formattedInfluenceurs);
