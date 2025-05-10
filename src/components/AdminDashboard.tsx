@@ -156,7 +156,8 @@ const AdminDashboard: React.FC = () => {
         name: newInfluenceur.name,
         imageUrl: imageUrl as string,
         voteCount: 0,
-        categoryId: selectedCategory // Utilise directement la catégorie sélectionnée
+        categoryId: selectedCategory,
+        isMain: false
       });
 
       setNewInfluenceur({ name: '', imageUrl: '' });
@@ -569,6 +570,9 @@ const AdminDashboard: React.FC = () => {
                   Image
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Catégorie
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Votes
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -605,6 +609,11 @@ const AdminDashboard: React.FC = () => {
                             />
                           </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="max-w-[120px] truncate" title={category?.name}>
+                          {category?.name || 'Non classé'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
