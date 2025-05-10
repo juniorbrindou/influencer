@@ -101,22 +101,30 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
     }
   };
 
+
+  // Fonction pour gérer l'acceptation du vote spécial
+  const handleAcceptSpecialVote = async () => {
+    await setSpecialVote(true);
+    submitVote(selectedInfluenceur, phoneNumber);
+    setOfferSecondVote(false);
+  };
+
+  // Fonction pour gérer le refus du vote spécial
+  const handleDeclineSpecialVote = () => {
+    setSpecialVote(false);
+    setOfferSecondVote(false); // Fermer la modale
+  };
+
+
   return (
     <>
       {/* SecondVoteOffer doit être en dehors de la modale principale */}
       {(offerSecondVote || isSpecialCategory) && (
         <SecondVoteOffer
-          onAccept={() => {
-            // Envoi immédiat au backend lorsqu'on accepte
-            submitVote(selectedInfluenceur, phoneNumber);
-            setSpecialVote(true);
-            setOfferSecondVote(false);
-          }}
-          onDecline={() => {
-            setOfferSecondVote(false);
-            resetSelection();
-          }}
-          influenceur={selectedInfluenceur} // Passage de l'influenceur sélectionné
+          onAccept={handleAcceptSpecialVote}
+          onDecline={handleDeclineSpecialVote}
+          influenceur={selectedInfluenceur}
+          isSpecialCategory={isSpecialCategory}
         />
       )}
 

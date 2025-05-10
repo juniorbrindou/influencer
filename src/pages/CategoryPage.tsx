@@ -10,11 +10,20 @@ const CategoryPage: React.FC = () => {
   const { listInfluenceur: influenceurs, selectedInfluenceur } = useVote();
   const { categories } = useCategoryManager();
 
+
+// Utilisez selectedCategory pour déterminer le contenu à afficher
+// useEffect(() => {
+//   if (selectedCategory) {
+//     // Faites quelque chose avec la catégorie sélectionnée
+//     console.log("Catégorie sélectionnée:", selectedCategory);
+//   }
+// }, [selectedCategory]);
+
   // Trouver la catégorie spéciale
   const specialCategory = categories.find(cat => cat.name === "Influenceur2lannee");
-  
+
   // Si c'est la catégorie spéciale, on prend tous les influenceurs
-  const influenceursToShow = id === specialCategory?.id 
+  const influenceursToShow = id === specialCategory?.id
     ? [...influenceurs] // Tous les influenceurs
     : influenceurs.filter(inf => inf.categoryId === id); // Filtre normal
 
@@ -48,7 +57,7 @@ const CategoryPage: React.FC = () => {
             {category?.name || 'Catégorie'}
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            {id === specialCategory?.id 
+            {id === specialCategory?.id
               ? "Votez pour l'Influenceur de l'Année (vous pouvez voter même si vous avez déjà voté dans une autre catégorie)"
               : "Votez pour votre influenceur préféré dans cette catégorie"}
           </p>
@@ -57,9 +66,9 @@ const CategoryPage: React.FC = () => {
         {/* Influenceur Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {influenceursToShow.map(influenceur => (
-            <InfluenceurCard 
-              key={influenceur.id} 
-              influenceur={influenceur} 
+            <InfluenceurCard
+              key={influenceur.id}
+              influenceur={influenceur}
               isSpecialCategory={id === specialCategory?.id}
             />
           ))}
@@ -80,7 +89,9 @@ const CategoryPage: React.FC = () => {
         )}
 
         {/* Vote Modal */}
-        {selectedInfluenceur && <VoteModal isSpecialCategory={id === specialCategory?.id} />}
+        {selectedInfluenceur && (
+          <VoteModal isSpecialCategory={id === specialCategory?.id} />
+        )}
       </div>
     </>
   );

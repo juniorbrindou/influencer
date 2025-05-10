@@ -469,17 +469,17 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
 
-      console.log("utilisation de submitVote avec :", selectedInfluenceur.id, fullPhoneNumber, specialVote);
-
-      console.log("Socket -----------------submitVote-------------");
-
-      socket.emit("submitVote", {
+      console.log("SubmitVote avec :", {
         influenceurId: selectedInfluenceur.id,
         phoneNumber: fullPhoneNumber,
         isSpecialVote: specialVote
       });
 
-      setSpecialVote(false); // Réinitialiser après envoi
+      socket.emit("submitVote", {
+        influenceurId: selectedInfluenceur.id,
+        phoneNumber: fullPhoneNumber,
+        isSpecialVote: specialVote // Assurez-vous que c'est bien passé
+      });
     } catch (error) {
       setIsLoading(false);
       setError('Erreur lors du vote');

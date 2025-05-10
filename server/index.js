@@ -98,32 +98,51 @@ io.on("connection", (socket) => {
     "submitVote",
     async ({ influenceurId, phoneNumber, isSpecialVote }) => {
       try {
+        console.log("Socket:SubmitVote");
+        console.log("Vote spécial:", isSpecialVote);
+
+        // Récupérer la catégorie "Influenceur2lannee" si c'est un vote spécial
+        let specialCategory = null;
+        if (isSpecialVote) {
+          specialCategory = await prisma.categories.findFirst({
+            where: {
+              name: {
+                equals: "Influenceur2lannee",
+                mode: "insensitive",
+              },
+            },
+          });
+
+          if (!specialCategory) {
+            socket.emit("voteError", "Catégorie spéciale non trouvée");
+            return;
+          }
+        }
+
         // Récupérer l'influenceur avec sa catégorie
         const influenceur = await prisma.influenceurs.findUnique({
           where: { id: influenceurId },
           include: { category: true },
         });
 
-        console.log("Soket:SubmitVote");
-        console.log("vote special", isSpecialVote);
-
         if (!influenceur) {
           socket.emit("voteError", "Influenceur non trouvé");
           return;
         }
 
-        const isSpecialCategory =
-          influenceur.category?.name === "Influenceur2lannee";
+        // Vérification des votes existants
         const existingVotes = await prisma.votes.findMany({
           where: { phoneNumber },
           include: { influenceurs: { include: { category: true } } },
         });
 
         // Vérification plus stricte pour la catégorie spéciale
-        if (isSpecialCategory) {
+        if (isSpecialVote) {
           // Pour la catégorie spéciale, vérifier si l'utilisateur a déjà voté dans une catégorie normale
           const hasNormalVote = existingVotes.some(
-            (vote) => vote.influenceurs.category.name !== "Influenceur2lannee"
+            (vote) =>
+              vote.influenceurs.category.name.toLowerCase() !==
+              "influenceur2lannee"
           );
 
           if (!hasNormalVote) {
@@ -141,26 +160,52 @@ io.on("connection", (socket) => {
           }
         }
 
+        // Préparer les données pour la création du vote
+        const voteData = {
+          influenceurId,
+          phoneNumber,
+          isValidated: true,
+          isSpecial: isSpecialCategory,
+          otp: isSpecialVote ? "SPECIAL" : "",
+          otpExpiresAt: isSpecialVote
+            ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+            : new Date(),
+        };
+
+        // Si c'est un vote spécial, on doit trouver un influenceur de la catégorie spéciale
+        if (isSpecialVote) {
+          // Trouver un influenceur de la catégorie spéciale
+          // todo bien checker cette partie
+          // const specialInfluenceur = await prisma.influenceurs.findFirst({
+          //   where: { categoryId: specialCategory.id },
+          // });
+
+          // if (!specialInfluenceur) {
+          //   socket.emit(
+          //     "voteError",
+          //     "Aucun influenceur trouvé dans la catégorie spéciale"
+          //   );
+          //   return;
+          // }
+
+          // Utiliser l'ID de l'influenceur spécial
+          voteData.influenceurId = specialInfluenceur.id;
+        }
+
         // Enregistrement du vote
         const vote = await prisma.votes.create({
-          data: {
-            influenceurId,
-            phoneNumber,
-            isValidated: true, // Toujours valider pour simplifier
-            isSpecial: isSpecialCategory || isSpecialVote,
-            otp: isSpecialVote ? "SPECIAL" : "",
-            otpExpiresAt: isSpecialVote
-              ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-              : new Date(),
-          },
+          data: voteData,
         });
 
         // Mise à jour des résultats
         const voteCount = await prisma.votes.count({
-          where: { influenceurId, isValidated: true },
+          where: { influenceurId: voteData.influenceurId, isValidated: true },
         });
 
-        io.emit("voteUpdate", { influenceurId, newVoteCount: voteCount });
+        io.emit("voteUpdate", {
+          influenceurId: voteData.influenceurId,
+          newVoteCount: voteCount,
+        });
         socket.emit("voteSuccess", vote);
       } catch (error) {
         console.error("Erreur WebSocket vote:", error);
