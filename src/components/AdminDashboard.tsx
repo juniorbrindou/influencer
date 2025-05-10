@@ -425,11 +425,16 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Liste des catégories existantes */}
+        {/* Liste des catégories existantes avec numérotation */}
         <div className="space-y-2 mt-4">
-          {categories.map(category => (
+          {categories.map((category, index) => (
             <div key={category.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
+                {/* Numéro stylisé */}
+                <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#6C63FF] text-white text-xs font-bold rounded-full">
+                  {index + 1}
+                </div>
+
                 {category.imageUrl && (
                   <div className="w-8 h-8 rounded-full overflow-hidden">
                     <img
@@ -659,6 +664,9 @@ const AdminDashboard: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  #
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Nom
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -678,10 +686,15 @@ const AdminDashboard: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {influenceurs
                 .filter(influenceur => !selectedCategory || influenceur.categoryId === selectedCategory)
-                .map((influenceur) => {
+                .map((influenceur, index) => {
                   const category = categories.find(cat => cat.id === influenceur.categoryId);
                   return (
                     <tr key={influenceur.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="w-6 h-6 flex items-center justify-center bg-[#6C63FF] text-white text-xs font-bold rounded-full">
+                          {index + 1}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {editingInfluenceurId === influenceur.id ? (
                           <input
