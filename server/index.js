@@ -499,19 +499,6 @@ app.post("/api/categories", async (req, res) => {
   }
 });
 
-// app.delete("/api/categories/:id", async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     await prisma.category.delete({
-//       where: { id },
-//     });
-//     res.json({ message: "Catégorie supprimée avec succès" });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ error: "Erreur lors de la suppression de la catégorie" });
-//   }
-// });
 
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
