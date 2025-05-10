@@ -3,8 +3,13 @@ import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useVote } from '../context/useVote';
 import SecondVoteOffer from './SecondVoteOffer'; // Assurez-vous d'avoir ce composant
+import countryCodes from '../data/countryCodes.json'; // Importez le fichier JSON
 
-const VoteModal: React.FC = () => {
+interface VoteModalProps {
+  isSpecialCategory?: boolean;
+}
+
+const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
   const {
     selectedInfluenceur,
     phoneNumber,
@@ -26,11 +31,6 @@ const VoteModal: React.FC = () => {
   const [showSpecialCategory, setShowSpecialCategory] = useState(false);
 
   const navigate = useNavigate();
-
-  const countryCodes = [
-    { code: '+225', name: 'Côte d\'Ivoire' },
-    { code: '+33', name: 'France' },
-  ];
 
   const { countryCode, setCountryCode } = useVote();
 

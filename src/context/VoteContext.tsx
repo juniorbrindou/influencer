@@ -592,6 +592,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateCategory,
         countryCode,
         setCountryCode,
+        offerSecondVote,
+        setOfferSecondVote,
+        specialVote,
+        setSpecialVote,
       }}
     >
       {socketConnected ? null : (

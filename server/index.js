@@ -93,51 +93,79 @@ io.on("connection", (socket) => {
    */
   // venant de gpt
   // WebSocket event for submitting a vote
-  socket.on("submitVote", async ({ influenceurId, phoneNumber, isSpecialVote }) => {
-  try {
-    const influenceur = await prisma.influenceurs.findUnique({
-      where: { id: influenceurId },
-      include: { category: true }
-    });
+  socket.on(
+    "submitVote",
+    async ({ influenceurId, phoneNumber, isSpecialVote }) => {
+      try {
+        const influenceur = await prisma.influenceurs.findUnique({
+          where: { id: influenceurId },
+          include: { category: true },
+        });
 
-    const existingVotes = await prisma.votes.findMany({
-      where: { phoneNumber },
-      include: { influenceur: { include: { category: true } } }
-    });
+        const existingVotes = await prisma.votes.findMany({
+          where: { phoneNumber },
+          include: { influenceur: { include: { category: true } } },
+        });
 
-    // Logique spéciale pour Influenceur2lannee
-    if (influenceur.category.name === "Influenceur2lannee" && !isSpecialVote) {
-      socket.emit("voteError", "Ce vote nécessite une validation spéciale");
-      return;
-    }
+        // Logique spéciale pour Influenceur2lannee
+        if (
+          influenceur.category?.name === "Influenceur2lannee" &&
+          !isSpecialVote
+        ) {
+          socket.emit("voteError", "Ce vote nécessite une validation spéciale");
+          return;
+        }
 
-    // Vérification des votes existants
-    if (isSpecialVote) {
-      // Vérifier si l'utilisateur a déjà voté spécial
-      const hasSpecialVote = existingVotes.some(vote => 
-        vote.influenceur.category.name === "Influenceur2lannee"
-      );
-      if (hasSpecialVote) {
-        socket.emit("voteError", "Vous avez déjà utilisé votre vote spécial");
-        return;
+        // Vérification des votes existants
+        if (isSpecialVote) {
+          // Vérifier si l'utilisateur a déjà voté spécial
+          const hasSpecialVote = existingVotes.some(
+            (vote) => vote.influenceur.category.name === "Influenceur2lannee"
+          );
+          if (hasSpecialVote) {
+            socket.emit(
+              "voteError",
+              "Vous avez déjà utilisé votre vote spécial"
+            );
+            return;
+          }
+        } else {
+          // Vérifier si l'utilisateur a déjà voté normalement
+          const hasNormalVote = existingVotes.some(
+            (vote) => vote.influenceur.category.name !== "Influenceur2lannee"
+          );
+          if (hasNormalVote) {
+            socket.emit("offerSecondVote", { canVoteSpecial: true });
+            return;
+          }
+        }
+
+        // Enregistrer le vote
+        const vote = await prisma.votes.create({
+          data: {
+            influenceurId,
+            phoneNumber,
+            isValidated: isSpecialVote, // Pour Influenceur2lannee, validation immédiate
+            otp: isSpecialVote ? "SPECIAL" : "",
+            otpExpiresAt: isSpecialVote
+              ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+              : new Date(), // Très loin dans le futur
+          },
+        });
+
+        // Mettre à jour les résultats en temps réel
+        const voteCount = await prisma.votes.count({
+          where: { influenceurId, isValidated: true },
+        });
+
+        io.emit("voteUpdate", { influenceurId, newVoteCount: voteCount });
+        socket.emit("voteSuccess", vote);
+      } catch (error) {
+        console.error("Erreur WebSocket vote:", error);
+        socket.emit("voteError", "Erreur lors du vote.");
       }
-    } else {
-      // Vérifier si l'utilisateur a déjà voté normalement
-      const hasNormalVote = existingVotes.some(vote => 
-        vote.influenceur.category.name !== "Influenceur2lannee"
-      );
-      if (hasNormalVote) {
-        socket.emit("offerSecondVote", { canVoteSpecial: true });
-        return;
-      }
     }
-
-    // ... reste de la logique d'enregistrement du vote
-  } catch (error) {
-    console.error("Erreur WebSocket vote:", error);
-    socket.emit("voteError", "Erreur lors du vote.");
-  }
-});
+  );
 
   /**
    * Route pour valider un vote avec OTP
