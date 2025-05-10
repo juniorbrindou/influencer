@@ -47,7 +47,10 @@ app.use(express.json());
 // Configuration de Multer (remplacez la section existante)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    const uploadDir = path.isAbsolute(process.env.UPLOAD_DIR)
+  ? process.env.UPLOAD_DIR
+  : path.join(process.cwd(), process.env.UPLOAD_DIR);
+    // const uploadDir = path.join(process.cwd(), "public", "uploads");
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
