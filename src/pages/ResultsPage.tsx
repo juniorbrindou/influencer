@@ -41,10 +41,10 @@ const ResultsPage: React.FC = () => {
               <option
                 key={category.id}
                 value={category.id}
-                className={category.name === "Influenceur2lannee" ? "font-bold text-[#6C63FF]" : ""}
+                className={category.name === "INFLUENCEUR2LANNEE" ? "font-bold text-[#6C63FF]" : ""}
               >
                 {category.name}
-                {category.name === "Influenceur2lannee" && " ★"}
+                {category.name === "INFLUENCEUR2LANNEE" && " ★"}
               </option>
             ))}
           </select>

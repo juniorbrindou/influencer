@@ -20,7 +20,7 @@ const CategoryPage: React.FC = () => {
 // }, [selectedCategory]);
 
   // Trouver la catégorie spéciale
-  const specialCategory = categories.find(cat => cat.name === "Influenceur2lannee");
+  const specialCategory = categories.find(cat => cat.name === "INFLUENCEUR2LANNEE");
 
   // Si c'est la catégorie spéciale, on prend tous les influenceurs
   const influenceursToShow = id === specialCategory?.id

@@ -60,7 +60,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
   if (!selectedInfluenceur) return null;
 
   // Trouver la catégorie spéciale
-  const specialCategory = categories.find(cat => cat.name === "Influenceur2lannee");
+  const specialCategory = categories.find(cat => cat.name === "INFLUENCEUR2LANNEE");
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,9 +74,8 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
     }
 
     try {
-      const hasVoted = await requestOTP(selectedInfluenceur, phoneNumber);
-      // La logique d'offre de second vote est maintenant gérée côté serveur
-
+      await requestOTP(selectedInfluenceur, phoneNumber);
+      // La gestion des erreurs est maintenant dans le contexte via les écouteurs socket
     } catch (error) {
       setError('Erreur lors de la demande de code');
       setIsSubmitting(false);
@@ -105,8 +104,11 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
   // Fonction pour gérer l'acceptation du vote spécial
   const handleAcceptSpecialVote = async () => {
     await setSpecialVote(true);
+
     submitVote(selectedInfluenceur, phoneNumber);
+    console.log("Vote spécial accepté", selectedInfluenceur, phoneNumber);
     setOfferSecondVote(false);
+    navigate('/confirmation');
   };
 
   // Fonction pour gérer le refus du vote spécial

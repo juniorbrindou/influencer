@@ -102,15 +102,18 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     });
 
-    socket.on("offerSecondVote", ({ canVoteSpecial }) => {
-      setOfferSecondVote(canVoteSpecial);
+    socket.on("voteError", (errorMessage) => {
+      setError(errorMessage);
       setIsLoading(false);
+      setOfferSecondVote(false); // S'assurer qu'on ne montre pas l'offre de second vote si erreur
     });
 
-    // socket.on("offerSecondVote", (data) => {
-    //   setOfferSecondVote(data.canVoteSpecial);
-    // });
-
+    socket.on("offerSecondVote", ({ canVoteSpecial }) => {
+      if (canVoteSpecial) {
+        setOfferSecondVote(true);
+      }
+      setIsLoading(false);
+    });
 
     socket.on("influenceursUpdate", (data) => {
       if (data.newInfluenceur) {
@@ -170,11 +173,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       resetSelection();
     });
 
-    socket.on("voteError", (errorMessage) => {
-      console.error("Erreur de vote:", errorMessage);
-      setError(errorMessage);
-      setIsLoading(false);
-    });
 
     socket.on("validateSuccess", (validatedVote) => {
       console.log("Vote validé avec succès:", validatedVote);
@@ -492,6 +490,35 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
  * @returns {Promise<boolean>} - true si le numéro a déjà voté, false sinon
  * @throws {Error} Si la requête échoue
  */
+  // const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
+  //   try {
+  //     setIsLoading(true);
+  //     setError(null);
+
+  //     const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
+
+  //     socket.emit("requestOTP", {
+  //       phoneNumber: fullPhoneNumber,
+  //       influenceurId: selectedInfluenceur.id
+  //     });
+
+  //     return new Promise((resolve) => {
+  //       const onResponse = (response: { hasVoted: boolean }) => {
+  //         socket.off("otpResponse", onResponse);
+  //         resolve(response.hasVoted);
+  //       };
+
+  //       socket.on("otpResponse", onResponse);
+  //       socket.on("otpSent", () => resolve(false));
+  //     });
+  //   } catch (error) {
+  //     setIsLoading(false);
+  //     setError("Erreur réseau");
+  //     throw error;
+  //   }
+  // };
+
+
   const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
     try {
       setIsLoading(true);
@@ -504,19 +531,11 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         influenceurId: selectedInfluenceur.id
       });
 
-      return new Promise((resolve) => {
-        const onResponse = (response: { hasVoted: boolean }) => {
-          socket.off("otpResponse", onResponse);
-          resolve(response.hasVoted);
-        };
-
-        socket.on("otpResponse", onResponse);
-        socket.on("otpSent", () => resolve(false));
-      });
+      return false; // Retourne false car la réponse sera gérée via les écouteurs socket
     } catch (error) {
       setIsLoading(false);
       setError("Erreur réseau");
-      throw error;
+      return false; // Ensure a boolean is returned even in case of an error
     }
   };
 
