@@ -223,32 +223,6 @@ const AdminDashboard: React.FC = () => {
    * Appelle la fonction addInfluenceur du contexte.
    * Réinitialise le formulaire et masque le formulaire d'ajout.
    */
-  // const handleAddInfluenceur = async () => {
-  //   if (!newInfluenceur.name || !newInfluenceur.imageUrl || !selectedCategory) return;
-
-  //   try {
-  //     let imageUrl = newInfluenceur.imageUrl;
-  //     if (newInfluenceur.imageUrl) {
-  //       imageUrl = await uploadImage(newInfluenceur.imageUrl as File);
-  //     }
-
-  //     await addInfluenceur({
-  //       id: '',
-  //       name: newInfluenceur.name,
-  //       imageUrl: imageUrl as string,
-  //       voteCount: 0,
-  //       categoryId: selectedCategory,
-  //       isMain: false
-  //     });
-
-  //     setNewInfluenceur({ name: '', imageUrl: '' });
-  //     setIsAddingInfluenceur(false);
-  //   } catch (error) {
-  //     console.error('Erreur lors de l\'ajout de l\'influenceur:', error);
-  //   }
-  // };
-
-
   const handleAddInfluenceur = async () => {
     if (!newInfluenceur.name || !newInfluenceur.imageUrl || !selectedCategory) return;
 

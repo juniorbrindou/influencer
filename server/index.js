@@ -543,9 +543,15 @@ app.post("/api/categories", async (req, res) => {
 app.get("/api/influenceurs", async (req, res) => {
   try {
     const influenceurs = await prisma.influenceurs.findMany({
-      include: {
+      select: {  // Utilisez 'select' au lieu de 'include' pour contrôler exactement les champs retournés
+        id: true,
+        name: true,
+        imageUrl: true,
+        isMain: true,
+        categoryId: true,
         votes: {
           where: { isValidated: true },
+          select: { id: true } // On a juste besoin de compter, pas des données complètes
         },
       },
     });
