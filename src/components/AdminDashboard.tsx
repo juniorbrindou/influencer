@@ -1,9 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { PlusCircle, Edit, Trash2, Save, X } from 'lucide-react';
 import { Category, Influenceur } from '../types';
 import { useVote } from '../context/useVote';
 import { useCategoryManager } from '../context/useCartegoryManager';
 import { ExclamationTriangleIcon } from '@heroicons/react/16/solid';
+import CountUp from 'react-countup';
+
+// Composant pour afficher une carte de statistique avec animation
+const StatCard = React.memo(({ title, value, color }: { title: string; value: number; color: string }) => {
+  const colorClasses = {
+    blue: 'bg-blue-50 text-blue-600',
+    green: 'bg-green-50 text-green-600',
+    purple: 'bg-purple-50 text-purple-600',
+  };
+
+  return (
+    <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-lg p-4`}>
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-2xl font-bold">
+        <CountUp end={value} duration={1.5} />
+      </p>
+    </div>
+  );
+});
+
+
 
 /**
  * Composant AdminDashboard pour gérer les influenceurs et afficher les statistiques de vote.
@@ -11,33 +32,70 @@ import { ExclamationTriangleIcon } from '@heroicons/react/16/solid';
 const AdminDashboard: React.FC = () => {
   // Extrait les données et fonctions nécessaires du contexte VoteContext
   const { listInfluenceur: influenceurs, votes, addInfluenceur, removeInfluenceur, updateInfluenceur } = useVote();
+  const { categories, addCategory, removeCategory, updateCategory } = useCategoryManager();
 
+  // États pour la gestion des influenceurs
   const [isAddingInfluenceur, setIsAddingInfluenceur] = useState(false);
   const [editingInfluenceurId, setEditingInfluenceurId] = useState<string | null>(null);
   const [newInfluenceur, setNewInfluenceur] = useState<Partial<Influenceur & { imageUrl: string | File | undefined }>>({
     name: '',
     imageUrl: undefined
   });
-  // État pour stocker les données de l'influenceur en cours d'édition
   const [editInfluenceur, setEditInfluenceur] = useState<Influenceur | null>(null);
 
-
-  const totalVotes = influenceurs.reduce((total, influenceur) => {
-    // Convertir voteCount en nombre au cas où ce serait une string
-    const votes = Number(influenceur.voteCount) || 0;
-    return total + votes;
-  }, 0);
-
-  // const [categories, setCategories] = useState<Category[]>([]);
+  // États pour la gestion des catégories
   const [newCategory, setNewCategory] = useState<Partial<Category> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
-  const { categories, addCategory, removeCategory, updateCategory, isLoading: isCategoryLoading, error: categoryError } = useCategoryManager();
+
+  // États pour les statistiques
+  const [stats, setStats] = useState({
+    totalInfluenceurs: 0,
+    totalVotes: 0,
+    totalVoteRecords: 0,
+    lastUpdated: new Date()
+  });
+
+  // Calcul des statistiques
+  useEffect(() => {
+    const totalVotes = influenceurs.reduce((total, influenceur) => {
+      return total + (Number(influenceur.voteCount) || 0);
+    }, 0);
+
+    setStats({
+      totalInfluenceurs: influenceurs.length,
+      totalVotes,
+      totalVoteRecords: votes.length,
+      lastUpdated: new Date()
+    });
+  }, [influenceurs, votes]);
 
 
-  // Ajoutez ces fonctions pour gérer les catégories
+  // Fonction pour uploader une image
+  const uploadImage = useCallback(async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Échec du téléchargement');
+      const data = await response.json();
+      return data.imageUrl;
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      throw error;
+    }
+  }, []);
+
+  // Fonctions pour la gestion des catégories
   const handleAddCategory = async () => {
     if (!newCategory?.name) return;
 
@@ -59,6 +117,29 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+
+  // // Ajoutez ces fonctions pour gérer les catégories
+  // const handleAddCategory = async () => {
+  //   if (!newCategory?.name) return;
+
+  //   try {
+  //     let imageUrl = '';
+  //     if (newCategory.imageUrl instanceof File) {
+  //       imageUrl = await uploadImage(newCategory.imageUrl);
+  //     } else if (newCategory.imageUrl) {
+  //       imageUrl = newCategory.imageUrl;
+  //     }
+
+  //     await addCategory({
+  //       name: newCategory.name,
+  //       imageUrl
+  //     });
+  //     setShowCategoryForm(false);
+  //   } catch (error) {
+  //     console.error('Erreur lors de l\'ajout de la catégorie:', error);
+  //   }
+  // };
+
   const handleDeleteCategory = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
       await removeCategory(id);
@@ -66,31 +147,31 @@ const AdminDashboard: React.FC = () => {
   };
 
 
-  const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('image', file);
+  // const uploadImage = async (file: File): Promise<string> => {
+  //   const formData = new FormData();
+  //   formData.append('image', file);
 
-    // Remplacez BACKEND_URL par l'URL de votre backend
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+  //   // Remplacez BACKEND_URL par l'URL de votre backend
+  //   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/upload`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
+  //   try {
+  //     const response = await fetch(`${BACKEND_URL}/api/upload`, {
+  //       method: 'POST',
+  //       credentials: 'include',
+  //       body: formData,
+  //     });
 
-      if (!response.ok) {
-        throw new Error('Échec du téléchargement de l\'image');
-      }
+  //     if (!response.ok) {
+  //       throw new Error('Échec du téléchargement de l\'image');
+  //     }
 
-      const data = await response.json();
-      return data.imageUrl;
-    } catch (error) {
-      console.error('Erreur lors de l\'upload:', error);
-      throw error;
-    }
-  };
+  //     const data = await response.json();
+  //     return data.imageUrl;
+  //   } catch (error) {
+  //     console.error('Erreur lors de l\'upload:', error);
+  //     throw error;
+  //   }
+  // };
 
 
   const handleSaveEditCategory = async () => {
@@ -142,13 +223,39 @@ const AdminDashboard: React.FC = () => {
    * Appelle la fonction addInfluenceur du contexte.
    * Réinitialise le formulaire et masque le formulaire d'ajout.
    */
+  // const handleAddInfluenceur = async () => {
+  //   if (!newInfluenceur.name || !newInfluenceur.imageUrl || !selectedCategory) return;
+
+  //   try {
+  //     let imageUrl = newInfluenceur.imageUrl;
+  //     if (newInfluenceur.imageUrl) {
+  //       imageUrl = await uploadImage(newInfluenceur.imageUrl as File);
+  //     }
+
+  //     await addInfluenceur({
+  //       id: '',
+  //       name: newInfluenceur.name,
+  //       imageUrl: imageUrl as string,
+  //       voteCount: 0,
+  //       categoryId: selectedCategory,
+  //       isMain: false
+  //     });
+
+  //     setNewInfluenceur({ name: '', imageUrl: '' });
+  //     setIsAddingInfluenceur(false);
+  //   } catch (error) {
+  //     console.error('Erreur lors de l\'ajout de l\'influenceur:', error);
+  //   }
+  // };
+
+
   const handleAddInfluenceur = async () => {
     if (!newInfluenceur.name || !newInfluenceur.imageUrl || !selectedCategory) return;
 
     try {
       let imageUrl = newInfluenceur.imageUrl;
-      if (newInfluenceur.imageUrl) {
-        imageUrl = await uploadImage(newInfluenceur.imageUrl as File);
+      if (newInfluenceur.imageUrl instanceof File) {
+        imageUrl = await uploadImage(newInfluenceur.imageUrl);
       }
 
       await addInfluenceur({
@@ -211,31 +318,19 @@ const AdminDashboard: React.FC = () => {
 
   // Rendu JSX du composant
   return (
-    <div className="space-y-8 p-4 md:p-6 lg:p-8"> {/* Ajout de padding pour l'espacement général */}
-
-      {/* Section En-tête du Tableau de Bord */}
+    <div className="space-y-8 p-4 md:p-6 lg:p-8">
+      {/* Section En-tête avec les statistiques animées */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Tableau de bord</h2>
 
-        {/* Grille pour afficher les statistiques clés */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Carte : Total des influenceurs */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-sm text-blue-600 font-medium">Total des influenceurs</p>
-            <p className="text-2xl font-bold">{influenceurs.length}</p>
-          </div>
+          <StatCard title="Total des influenceurs" value={stats.totalInfluenceurs} color="blue" />
+          <StatCard title="Total des votes" value={stats.totalVotes} color="green" />
+          <StatCard title="Nb. Votes Enregistrés" value={stats.totalVoteRecords} color="purple" />
+        </div>
 
-          {/* Carte : Total des votes */}
-          <div className="bg-green-50 rounded-lg p-4">
-            <p className="text-sm text-green-600 font-medium">Total des votes</p>
-            <p className="text-2xl font-bold">{isNaN(totalVotes) ? 0 : totalVotes}</p>
-          </div>
-
-          {/* Carte : Autre statistique (nombre d'enregistrements de votes individuels) */}
-          <div className="bg-purple-50 rounded-lg p-4">
-            <p className="text-sm text-purple-600 font-medium">Nb. Votes Enregistrés</p> {/* Libellé plus clair */}
-            <p className="text-2xl font-bold">{votes.length}</p>
-          </div>
+        <div className="mt-2 text-xs text-gray-500 text-right">
+          Dernière mise à jour: {stats.lastUpdated.toLocaleTimeString()}
         </div>
       </div>
 
