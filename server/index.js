@@ -528,6 +528,7 @@ app.get("/api/influenceurs", async (req, res) => {
       id: inf.id,
       name: inf.name,
       imageUrl: inf.imageUrl,
+      isMain: inf.isMain,
       categoryId: inf.categoryId, // Assurez-vous que cette propriété est incluse
       voteCount: inf.votes ? inf.votes.length : 0,
     }));

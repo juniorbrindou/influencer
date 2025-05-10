@@ -5,6 +5,7 @@ export interface Influenceur {
   categoryId: string;
   category?: Category;
   voteCount: number;
+  isMain: boolean
 }
 
 export interface Vote {
