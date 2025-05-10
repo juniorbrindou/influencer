@@ -46,6 +46,7 @@ model Votes {
   isValidated     Boolean      @default(false)
   timestamp     DateTime     @default(now())
   influenceurs  Influenceurs? @relation(fields: [influenceurId], references: [id])
+  isSpecial Boolean @default(false)
 }
 
 model Users {

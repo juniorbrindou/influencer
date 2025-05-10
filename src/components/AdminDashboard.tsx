@@ -492,25 +492,6 @@ const AdminDashboard: React.FC = () => {
                   />
                 </div>
 
-                {/* Champ : Catégorie (pré-rempli avec la sélection du filtre) */}
-                {/* <div>
-                  <label htmlFor="influenceurCategoryAdd" className="block text-sm font-medium text-gray-700 mb-1">
-                    Catégorie
-                  </label>
-                  <select
-                    id="influenceurCategoryAdd"
-                    value={newInfluenceur.categoryId || selectedCategory || ''}
-                    onChange={(e) => setNewInfluenceur({ ...newInfluenceur, categoryId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#6C63FF] focus:border-transparent shadow-sm"
-                    required
-                  >
-                    <option value="">Sélectionnez une catégorie</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
-                </div> */}
-
                 {/* Champ : Image de l'influenceur */}
                 <div>
                   <label htmlFor="influenceurImageAdd" className="block text-sm font-medium text-gray-700 mb-1">

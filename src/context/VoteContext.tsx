@@ -27,6 +27,11 @@ interface VoteContextType {
   updateCategory: (category: Category) => Promise<void>;
   countryCode: string;
   setCountryCode: (code: string) => void;
+
+  offerSecondVote: boolean;
+  setOfferSecondVote: (val: boolean) => void;
+  specialVote: boolean;
+  setSpecialVote: (val: boolean) => void;
 }
 
 export const VoteContext = createContext<VoteContextType | undefined>(undefined);
@@ -61,6 +66,9 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [categories, setCategories] = useState<Category[]>([]);
   const [countryCode, setCountryCode] = useState<string>('+225');
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+  const [offerSecondVote, setOfferSecondVote] = useState(false);
+  const [specialVote, setSpecialVote] = useState(false);
+
 
   useEffect(() => {
     localStorage.setItem("votes", JSON.stringify(votes));
@@ -94,6 +102,19 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     });
 
+    socket.on("voteError", (errorMessage) => {
+      setError(errorMessage);
+      setIsLoading(false);
+      setOfferSecondVote(false); // S'assurer qu'on ne montre pas l'offre de second vote si erreur
+    });
+
+    socket.on("offerSecondVote", ({ canVoteSpecial }) => {
+      if (canVoteSpecial) {
+        setOfferSecondVote(true);
+      }
+      setIsLoading(false);
+    });
+
     socket.on("influenceursUpdate", (data) => {
       if (data.newInfluenceur) {
         setInfluenceurs(prev => [...prev, data.newInfluenceur]);
@@ -109,6 +130,28 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ));
       }
     });
+
+
+    // Écouteur pour les mises à jour de catégories
+
+    socket.on("categoriesUpdate", (data) => {
+      if (data.newCategory) {
+        setCategories(prev => [...prev, data.newCategory]);
+      }
+
+      if (data.deletedCategoryId) {
+        setCategories(prev => prev.filter(cat => cat.id !== data.deletedCategoryId));
+      }
+
+      if (data.updatedCategory) {
+        setCategories(prev => prev.map(cat =>
+          cat.id === data.updatedCategory.id ? data.updatedCategory : cat
+        ));
+      }
+    });
+    // fin de l'écouteur pour les mises à jour de catégories
+
+
 
     // Écouteurs spécifiques au processus de vote
     socket.on("otpSent", (otp) => {
@@ -130,11 +173,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       resetSelection();
     });
 
-    socket.on("voteError", (errorMessage) => {
-      console.error("Erreur de vote:", errorMessage);
-      setError(errorMessage);
-      setIsLoading(false);
-    });
 
     socket.on("validateSuccess", (validatedVote) => {
       console.log("Vote validé avec succès:", validatedVote);
@@ -231,7 +269,33 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(BACKEND_URL + '/api/categories', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
 
+      if (!response.ok) {
+        throw new Error(`Erreur réseau: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error('Erreur chargement catégories:', error);
+      setError('Erreur chargement catégories');
+    }
+  };
+
+  // Appelez cette fonction dans un useEffect
+  useEffect(() => {
+    fetchCategories();
+    fetchInfluenceurs();
+  }, []);
 
 
   /**
@@ -401,16 +465,21 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       setError(null);
 
-      // Utiliser socket.io pour soumettre le vote
-      socket.emit("submitVote", {
+      const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
+
+      console.log("SubmitVote avec :", {
         influenceurId: selectedInfluenceur.id,
-        phoneNumber: phoneNumber
+        phoneNumber: fullPhoneNumber,
+        isSpecialVote: specialVote
       });
 
-      // La réponse sera traitée par les gestionnaires d'événements socket
+      socket.emit("submitVote", {
+        influenceurId: selectedInfluenceur.id,
+        phoneNumber: fullPhoneNumber,
+        isSpecialVote: specialVote // Assurez-vous que c'est bien passé
+      });
     } catch (error) {
       setIsLoading(false);
-      console.error('Erreur lors du vote:', error);
       setError('Erreur lors du vote');
       throw error;
     }
@@ -421,43 +490,52 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
  * @returns {Promise<boolean>} - true si le numéro a déjà voté, false sinon
  * @throws {Error} Si la requête échoue
  */
-  const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
-    if (!selectedInfluenceur || !phoneNumberWithoutCode) {
-      setError("Sélectionnez un influenceur et entrez un numéro");
-      return false;
-    }
+  // const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
+  //   try {
+  //     setIsLoading(true);
+  //     setError(null);
 
+  //     const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
+
+  //     socket.emit("requestOTP", {
+  //       phoneNumber: fullPhoneNumber,
+  //       influenceurId: selectedInfluenceur.id
+  //     });
+
+  //     return new Promise((resolve) => {
+  //       const onResponse = (response: { hasVoted: boolean }) => {
+  //         socket.off("otpResponse", onResponse);
+  //         resolve(response.hasVoted);
+  //       };
+
+  //       socket.on("otpResponse", onResponse);
+  //       socket.on("otpSent", () => resolve(false));
+  //     });
+  //   } catch (error) {
+  //     setIsLoading(false);
+  //     setError("Erreur réseau");
+  //     throw error;
+  //   }
+  // };
+
+
+  const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       setError(null);
 
       const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
-      console.log("📞 Numéro complet:", fullPhoneNumber);
 
       socket.emit("requestOTP", {
         phoneNumber: fullPhoneNumber,
         influenceurId: selectedInfluenceur.id
       });
 
-      return new Promise((resolve) => {
-        const onResponse = (response: { hasVoted: boolean }) => {
-          socket.off("otpResponse", onResponse);
-          resolve(response.hasVoted);
-        };
-
-        socket.on("otpResponse", onResponse);
-
-        // Écoute également otpSent pour confirmer l'envoi
-        const onOtpSent = () => {
-          socket.off("otpSent", onOtpSent);
-          resolve(false); // Pas de vote existant
-        };
-        socket.on("otpSent", onOtpSent);
-      });
+      return false; // Retourne false car la réponse sera gérée via les écouteurs socket
     } catch (error) {
       setIsLoading(false);
       setError("Erreur réseau");
-      throw error;
+      return false; // Ensure a boolean is returned even in case of an error
     }
   };
 
@@ -488,13 +566,9 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phoneNumber: `${countryCode}${phoneNumber}`, // Format cohérent
         otp
       });
-      console.log("numéro de téléphone:", phoneNumber);
-      console.log("Numéro de téléphone formaté:", `${countryCode}${phoneNumber}`);
+      console.log("Socket -----------------validateOTP-------------");
 
       console.log("Validation de l'OTP:", otp);
-
-
-      // todo La réponse sera traitée par les gestionnaires d'événements socket
     } catch (error) {
       setIsLoading(false);
       console.error('Erreur lors de la validation de l\'OTP:', error);
@@ -528,6 +602,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateCategory,
         countryCode,
         setCountryCode,
+        offerSecondVote,
+        setOfferSecondVote,
+        specialVote,
+        setSpecialVote,
       }}
     >
       {socketConnected ? null : (
