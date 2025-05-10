@@ -102,6 +102,16 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
     });
 
+    socket.on("offerSecondVote", ({ canVoteSpecial }) => {
+      setOfferSecondVote(canVoteSpecial);
+      setIsLoading(false);
+    });
+
+    // socket.on("offerSecondVote", (data) => {
+    //   setOfferSecondVote(data.canVoteSpecial);
+    // });
+
+
     socket.on("influenceursUpdate", (data) => {
       if (data.newInfluenceur) {
         setInfluenceurs(prev => [...prev, data.newInfluenceur]);
@@ -117,12 +127,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ));
       }
     });
-
-
-    socket.on("offerSecondVote", (data) => {
-      setOfferSecondVote(data.canVoteSpecial);
-    });
-
 
 
     // Écouteur pour les mises à jour de catégories

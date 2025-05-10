@@ -104,9 +104,8 @@ io.on("connection", (socket) => {
           include: { category: true },
         });
 
-        console.log("📥 Tentative de vote:");
+        console.log("Soket:SubmitVote");
         console.log("vote special", isSpecialVote);
-        
 
         if (!influenceur) {
           socket.emit("voteError", "Influenceur non trouvé");
@@ -122,45 +121,23 @@ io.on("connection", (socket) => {
 
         // Vérification plus stricte pour la catégorie spéciale
         if (isSpecialCategory) {
-          if (!isSpecialVote) {
-            socket.emit(
-              "voteError",
-              "Ce vote nécessite une validation spéciale"
-            );
-            return;
-          }
-
-          // Vérifier si l'utilisateur a déjà voté dans n'importe quelle catégorie
-          if (existingVotes.length > 0) {
-            socket.emit(
-              "voteError",
-              "Vous avez déjà voté (catégorie spéciale)"
-            );
-            return;
-          }
-        } else {
-          // Pour les catégories normales
+          // Pour la catégorie spéciale, vérifier si l'utilisateur a déjà voté dans une catégorie normale
           const hasNormalVote = existingVotes.some(
             (vote) => vote.influenceurs.category.name !== "Influenceur2lannee"
           );
 
-          if (hasNormalVote) {
-            if (!isSpecialVote) {
-              socket.emit("offerSecondVote", { canVoteSpecial: true });
-              return;
-            } else {
-              // Vérifier si l'utilisateur a déjà utilisé son vote spécial
-              const hasSpecialVote = existingVotes.some(
-                (vote) => vote.isSpecial
-              );
-              if (hasSpecialVote) {
-                socket.emit(
-                  "voteError",
-                  "Vous avez déjà utilisé votre vote spécial"
-                );
-                return;
-              }
-            }
+          if (!hasNormalVote) {
+            socket.emit(
+              "voteError",
+              "Vous devez d'abord voter dans une catégorie normale"
+            );
+            return;
+          }
+        } else {
+          // Pour les catégories normales, vérifier si l'utilisateur a déjà voté
+          if (existingVotes.length > 0) {
+            socket.emit("offerSecondVote", { canVoteSpecial: true });
+            return;
           }
         }
 
@@ -369,7 +346,6 @@ io.on("connection", (socket) => {
         influenceurId: vote.influenceurs.id,
         newVoteCount,
       });
-
 
       socket.emit("validateSuccess");
     } catch (error) {

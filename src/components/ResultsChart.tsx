@@ -6,18 +6,18 @@ interface ResultsChartProps {
 }
 
 const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
-  const { listInfluenceur: listInfluenceurs, categories  } = useVote();
-  
+  const { listInfluenceur: listInfluenceurs, categories } = useVote();
+
   // Filtrer les influenceurs par catégorie
   const influenceursByCategory = listInfluenceurs.filter(
     (influenceur) => influenceur.categoryId === categoryId
   );
-  
-   // Trouver la catégorie spéciale
+
+  // Trouver la catégorie spéciale
   const specialCategory = categories.find(cat => cat.name === "Influenceur2lannee");
-  
+
   // Si c'est la catégorie spéciale, on prend tous les influenceurs
-  const influenceursToShow = categoryId === specialCategory?.id 
+  const influenceursToShow = categoryId === specialCategory?.id
     ? [...listInfluenceurs] // Tous les influenceurs
     : listInfluenceurs.filter(inf => inf.categoryId === categoryId); // Filtre normal
 
@@ -31,7 +31,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
 
   // Calcul du total des votes pour la catégorie
   const totalVotes = influenceursToShow.reduce(
-    (total, influenceur) => total + influenceur.voteCount, 
+    (total, influenceur) => total + influenceur.voteCount,
     0
   );
 
@@ -39,7 +39,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
     const sorted = [...influenceursByCategory].sort((a, b) => b.voteCount - a.voteCount);
     setSortedInfluenceurs(sorted);
     setAnimatedBars(false);
-    
+
     setTimeout(() => {
       setAnimatedBars(true);
     }, 300);
@@ -67,7 +67,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
                 <div className="flex items-center space-x-3">
                   <div className="h-10 w-10 rounded-full overflow-hidden">
                     <img
-                      src={influenceur.imageUrl}
+                      src={influenceur.imageUrl as string}
                       alt={influenceur.name}
                       className="h-full w-full object-cover"
                     />
