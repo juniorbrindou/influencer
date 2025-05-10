@@ -59,9 +59,8 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
 
     try {
       const hasVoted = await requestOTP(selectedInfluenceur, phoneNumber);
-      if (hasVoted) {
-        setError('Vous avez déjà voté avec ce numéro');
-      }
+      // La logique d'offre de second vote est maintenant gérée côté serveur
+
     } catch (error) {
       setError('Erreur lors de la demande de code');
       setIsSubmitting(false);
@@ -108,7 +107,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
         <div className={`${offerSecondVote ? 'hidden' : 'block'}`}>
           <div className="flex justify-between items-center p-5 bg-black text-yellow-500">
             <h2 className="text-xl font-semibold">
-              {showSpecialCategory && specialCategory 
+              {showSpecialCategory && specialCategory
                 ? `Voter pour ${specialCategory.name}`
                 : `Voter pour ${selectedInfluenceur.name}`}
             </h2>

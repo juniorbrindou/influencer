@@ -93,67 +93,92 @@ io.on("connection", (socket) => {
    */
   // venant de gpt
   // WebSocket event for submitting a vote
+  // Modifiez la partie "submitVote" comme suit :
   socket.on(
     "submitVote",
     async ({ influenceurId, phoneNumber, isSpecialVote }) => {
       try {
+        // Récupérer l'influenceur avec sa catégorie
         const influenceur = await prisma.influenceurs.findUnique({
           where: { id: influenceurId },
           include: { category: true },
         });
 
-        const existingVotes = await prisma.votes.findMany({
-          where: { phoneNumber },
-          include: { influenceur: { include: { category: true } } },
-        });
+        console.log("📥 Tentative de vote:");
+        console.log("vote special", isSpecialVote);
+        
 
-        // Logique spéciale pour Influenceur2lannee
-        if (
-          influenceur.category?.name === "Influenceur2lannee" &&
-          !isSpecialVote
-        ) {
-          socket.emit("voteError", "Ce vote nécessite une validation spéciale");
+        if (!influenceur) {
+          socket.emit("voteError", "Influenceur non trouvé");
           return;
         }
 
-        // Vérification des votes existants
-        if (isSpecialVote) {
-          // Vérifier si l'utilisateur a déjà voté spécial
-          const hasSpecialVote = existingVotes.some(
-            (vote) => vote.influenceur.category.name === "Influenceur2lannee"
-          );
-          if (hasSpecialVote) {
+        const isSpecialCategory =
+          influenceur.category?.name === "Influenceur2lannee";
+        const existingVotes = await prisma.votes.findMany({
+          where: { phoneNumber },
+          include: { influenceurs: { include: { category: true } } },
+        });
+
+        // Vérification plus stricte pour la catégorie spéciale
+        if (isSpecialCategory) {
+          if (!isSpecialVote) {
             socket.emit(
               "voteError",
-              "Vous avez déjà utilisé votre vote spécial"
+              "Ce vote nécessite une validation spéciale"
+            );
+            return;
+          }
+
+          // Vérifier si l'utilisateur a déjà voté dans n'importe quelle catégorie
+          if (existingVotes.length > 0) {
+            socket.emit(
+              "voteError",
+              "Vous avez déjà voté (catégorie spéciale)"
             );
             return;
           }
         } else {
-          // Vérifier si l'utilisateur a déjà voté normalement
+          // Pour les catégories normales
           const hasNormalVote = existingVotes.some(
-            (vote) => vote.influenceur.category.name !== "Influenceur2lannee"
+            (vote) => vote.influenceurs.category.name !== "Influenceur2lannee"
           );
+
           if (hasNormalVote) {
-            socket.emit("offerSecondVote", { canVoteSpecial: true });
-            return;
+            if (!isSpecialVote) {
+              socket.emit("offerSecondVote", { canVoteSpecial: true });
+              return;
+            } else {
+              // Vérifier si l'utilisateur a déjà utilisé son vote spécial
+              const hasSpecialVote = existingVotes.some(
+                (vote) => vote.isSpecial
+              );
+              if (hasSpecialVote) {
+                socket.emit(
+                  "voteError",
+                  "Vous avez déjà utilisé votre vote spécial"
+                );
+                return;
+              }
+            }
           }
         }
 
-        // Enregistrer le vote
+        // Enregistrement du vote
         const vote = await prisma.votes.create({
           data: {
             influenceurId,
             phoneNumber,
-            isValidated: isSpecialVote, // Pour Influenceur2lannee, validation immédiate
+            isValidated: true, // Toujours valider pour simplifier
+            isSpecial: isSpecialCategory || isSpecialVote,
             otp: isSpecialVote ? "SPECIAL" : "",
             otpExpiresAt: isSpecialVote
               ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-              : new Date(), // Très loin dans le futur
+              : new Date(),
           },
         });
 
-        // Mettre à jour les résultats en temps réel
+        // Mise à jour des résultats
         const voteCount = await prisma.votes.count({
           where: { influenceurId, isValidated: true },
         });
@@ -162,7 +187,7 @@ io.on("connection", (socket) => {
         socket.emit("voteSuccess", vote);
       } catch (error) {
         console.error("Erreur WebSocket vote:", error);
-        socket.emit("voteError", "Erreur lors du vote.");
+        socket.emit("voteError", "Erreur lors du vote: " + error.message);
       }
     }
   );
@@ -182,38 +207,72 @@ io.on("connection", (socket) => {
     }
 
     try {
-      // 1. Vérifier si l'utilisateur a déjà voté
-      const existingVote = await prisma.votes.findFirst({
-        where: { phoneNumber },
+      // Récupérer l'influenceur avec sa catégorie
+      const influenceur = await prisma.influenceurs.findUnique({
+        where: { id: influenceurId },
+        include: { category: true },
       });
 
-      if (existingVote?.isValidated) {
-        socket.emit("otpResponse", { hasVoted: true });
-        return;
+      const isSpecialCategory =
+        influenceur.category?.name === "Influenceur2lannee";
+
+      // Vérifier les votes existants
+      const existingVotes = await prisma.votes.findMany({
+        where: { phoneNumber },
+        include: { influenceurs: { include: { category: true } } },
+      });
+
+      // Correction ici: utiliser existingVotes[0] pour le vote existant
+      const existingVote = existingVotes.length > 0 ? existingVotes[0] : null;
+
+      const hasNormalVote = existingVotes.some(
+        (v) => v.influenceurs?.category?.name !== "Influenceur2lannee"
+      );
+
+      const hasSpecialVote = existingVotes.some(
+        (v) => v.influenceurs?.category?.name === "Influenceur2lannee"
+      );
+
+      // Logique spéciale pour Influenceur2lannee
+      if (isSpecialCategory) {
+        if (hasSpecialVote) {
+          socket.emit("otpError", "Vous avez déjà utilisé votre vote spécial");
+          return;
+        }
+        if (!hasNormalVote) {
+          socket.emit(
+            "otpError",
+            "Vous devez d'abord voter dans une catégorie normale"
+          );
+          return;
+        }
+      } else {
+        if (hasNormalVote) {
+          socket.emit("offerSecondVote", { canVoteSpecial: true });
+          return;
+        }
       }
 
-      // 2. Générer un OTP
+      // Générer un OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-      // 3. Logger les détails avant l'envoi
       console.log("📤 Tentative d'envoi WhatsApp via Twilio:", {
         to: phoneNumber,
         body: `Votre code de vérification est : ${otp}`,
         from: process.env.TWILIO_WHATSAPP_NUMBER,
       });
 
-      // 4. Envoyer l'OTP via Twilio
+      // Envoyer l'OTP via Twilio
       const twilioResponse = await twilioClient.messages.create({
         body: `Votre code de vérification est : ${otp}. Valide 5 minutes.`,
         from: process.env.TWILIO_WHATSAPP_NUMBER,
         to: `whatsapp:${phoneNumber}`,
       });
 
-      socket.emit("otpSent", otp); // Événement déjà écouté par le frontend
+      socket.emit("otpSent", otp);
       console.log("📢 Émission Socket.IO : otpSent", otp);
 
-      // 5. Logger la réponse de Twilio
       console.log("✅ Réponse Twilio:", {
         status: twilioResponse.status,
         sid: twilioResponse.sid,
@@ -221,11 +280,16 @@ io.on("connection", (socket) => {
         errorMessage: twilioResponse.errorMessage,
       });
 
-      // 6. Sauvegarder en base de données
+      // Sauvegarder en base de données
       if (existingVote) {
         await prisma.votes.update({
           where: { id: existingVote.id },
-          data: { otp, otpExpiresAt, influenceurId },
+          data: {
+            otp,
+            otpExpiresAt,
+            influenceurId,
+            isSpecial: isSpecialCategory, // Mettre à jour aussi le flag isSpecial
+          },
         });
       } else {
         await prisma.votes.create({
@@ -233,15 +297,13 @@ io.on("connection", (socket) => {
             influenceurId,
             phoneNumber,
             otp,
-            otpExpiresAt,
+            otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
             isValidated: false,
+            isSpecial: isSpecialCategory,
           },
         });
       }
-
-      socket.emit("otpSent", otp); // Confirmation au client
     } catch (err) {
-      // 7. Logger les erreurs Twilio en détail
       console.error("❌ Erreur Twilio:", {
         message: err.message,
         code: err.code,
@@ -264,39 +326,54 @@ io.on("connection", (socket) => {
    * @throws {500} - Erreur serveur lors de la validation du vote
    */
   socket.on("validateOTP", async ({ phoneNumber, otp }) => {
-    if (!phoneNumber || !otp) {
-      socket.emit("validateError", "Numéro ou OTP manquant.");
-      return;
-    }
-
     try {
       const vote = await prisma.votes.findFirst({
         where: {
           phoneNumber,
           otp,
           isValidated: false,
-          otpExpiresAt: {
-            gte: new Date(), // OTP encore valide
-          },
+          otpExpiresAt: { gte: new Date() },
+        },
+        include: {
+          influenceurs: true, // Simplifié car vous n'utilisez pas category dans l'émission
         },
       });
 
       if (!vote) {
-        socket.emit("validateError", "OTP invalide ou expiré.");
+        socket.emit("validateError", "OTP invalide ou expiré");
         return;
       }
-      const updatedVote = await prisma.votes.update({
+
+      // 1. Marquer comme validé
+      await prisma.votes.update({
         where: { id: vote.id },
         data: { isValidated: true },
       });
-      socket.emit("validateSuccess", updatedVote);
-      // 🚀 Emit une mise à jour en temps réel si besoin :
-      io.emit("voteValidated", {
-        influenceurId: updatedVote.influenceurId,
+
+      // 2. Calculer le nouveau nombre de votes
+      const newVoteCount = await prisma.votes.count({
+        where: {
+          influenceurId: vote.influenceurs.id,
+          isValidated: true,
+        },
       });
-    } catch (err) {
-      console.error("Erreur validation WebSocket:", err);
-      socket.emit("validateError", "Erreur serveur.");
+
+      // 3. Émettre avec le format attendu par le frontend
+      io.emit("voteUpdate", {
+        influenceurId: vote.influenceurs.id,
+        newVoteCount, // Maintenant présent !
+      });
+
+      console.log("------validateOTP ---->>>>> voteUpdate");
+      console.log("📢 Émission Socket.IO : voteUpdate", {
+        influenceurId: vote.influenceurs.id,
+        newVoteCount,
+      });
+
+
+      socket.emit("validateSuccess");
+    } catch (error) {
+      socket.emit("validateError", "Erreur serveur");
     }
   });
 

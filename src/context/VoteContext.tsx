@@ -463,18 +463,21 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       setError(null);
 
+      const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
+
+      console.log("utilisation de submitVote avec :", selectedInfluenceur.id, fullPhoneNumber, specialVote);
+
+      console.log("Socket -----------------submitVote-------------");
+
       socket.emit("submitVote", {
         influenceurId: selectedInfluenceur.id,
-        phoneNumber: phoneNumber,
-        isSpecialVote: specialVote // On envoie cette information au backend
+        phoneNumber: fullPhoneNumber,
+        isSpecialVote: specialVote
       });
 
-      // Réinitialiser le flag après le vote
-      setSpecialVote(false);
-
+      setSpecialVote(false); // Réinitialiser après envoi
     } catch (error) {
       setIsLoading(false);
-      console.error('Erreur lors du vote:', error);
       setError('Erreur lors du vote');
       throw error;
     }
@@ -486,17 +489,11 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
  * @throws {Error} Si la requête échoue
  */
   const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
-    if (!selectedInfluenceur || !phoneNumberWithoutCode) {
-      setError("Sélectionnez un influenceur et entrez un numéro");
-      return false;
-    }
-
     try {
       setIsLoading(true);
       setError(null);
 
       const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
-      console.log("📞 Numéro complet:", fullPhoneNumber);
 
       socket.emit("requestOTP", {
         phoneNumber: fullPhoneNumber,
@@ -510,13 +507,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         socket.on("otpResponse", onResponse);
-
-        // Écoute également otpSent pour confirmer l'envoi
-        const onOtpSent = () => {
-          socket.off("otpSent", onOtpSent);
-          resolve(false); // Pas de vote existant
-        };
-        socket.on("otpSent", onOtpSent);
+        socket.on("otpSent", () => resolve(false));
       });
     } catch (error) {
       setIsLoading(false);
@@ -552,13 +543,9 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phoneNumber: `${countryCode}${phoneNumber}`, // Format cohérent
         otp
       });
-      console.log("numéro de téléphone:", phoneNumber);
-      console.log("Numéro de téléphone formaté:", `${countryCode}${phoneNumber}`);
+      console.log("Socket -----------------validateOTP-------------");
 
       console.log("Validation de l'OTP:", otp);
-
-
-      // todo La réponse sera traitée par les gestionnaires d'événements socket
     } catch (error) {
       setIsLoading(false);
       console.error('Erreur lors de la validation de l\'OTP:', error);

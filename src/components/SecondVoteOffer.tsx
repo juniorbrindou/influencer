@@ -1,5 +1,3 @@
-import React from 'react';
-
 const SecondVoteOffer: React.FC<{
   onAccept: () => void;
   onDecline: () => void;
@@ -20,7 +18,9 @@ const SecondVoteOffer: React.FC<{
             Non merci
           </button>
           <button
-            onClick={onAccept}
+            onClick={() => {
+              onAccept(); // Cela déclenchera setSpecialVote(true) dans VoteModal
+            }}
             className="px-4 py-2 bg-[#6C63FF] text-white rounded-md"
           >
             Oui, voter à nouveau
