@@ -29,7 +29,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: ["http://localhost:5173", "https://influenceur2lannee.com"],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   },
@@ -48,8 +48,8 @@ app.use(express.json());
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.isAbsolute(process.env.UPLOAD_DIR)
-  ? process.env.UPLOAD_DIR
-  : path.join(process.cwd(), process.env.UPLOAD_DIR);
+      ? process.env.UPLOAD_DIR
+      : path.join(process.cwd(), process.env.UPLOAD_DIR);
     // const uploadDir = path.join(process.cwd(), "public", "uploads");
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
@@ -456,6 +456,46 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("updateInfluenceur", async (updatedInfluenceur) => {
+    try {
+      // Vérifier que la catégorie existe
+      if (updatedInfluenceur.categoryId) {
+        const categoryExists = await prisma.category.findUnique({
+          where: { id: updatedInfluenceur.categoryId },
+        });
+        if (!categoryExists) {
+          socket.emit("influenceurError", "Catégorie non trouvée");
+          return;
+        }
+      }
+
+      const result = await prisma.influenceurs.update({
+        where: { id: updatedInfluenceur.id },
+        data: {
+          name: updatedInfluenceur.name,
+          imageUrl: updatedInfluenceur.imageUrl,
+          categoryId: updatedInfluenceur.categoryId,
+        },
+        include: {
+          votes: {
+            where: { isValidated: true },
+          },
+        },
+      });
+
+      // Formater la réponse avec voteCount
+      const responseData = {
+        ...result,
+        voteCount: result.votes ? result.votes.length : 0,
+      };
+
+      io.emit("influenceursUpdate", { updatedInfluenceur: responseData });
+    } catch (error) {
+      console.error("Erreur mise à jour influenceur:", error);
+      socket.emit("influenceurError", "Erreur lors de la mise à jour");
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("Client déconnecté:", socket.id);
   });
@@ -498,7 +538,6 @@ app.post("/api/categories", async (req, res) => {
       .json({ error: "Erreur lors de la création de la catégorie" });
   }
 });
-
 
 // Routes pour les influenceurs
 app.get("/api/influenceurs", async (req, res) => {
@@ -614,6 +653,76 @@ app.post("/api/influenceurs", async (req, res) => {
     res
       .status(500)
       .json({ error: "Erreur lors de la création de l'influenceur" });
+  }
+});
+
+/**
+ * Route pour mettre à jour un influenceur
+ * @route PUT /api/influenceurs/:id
+ * @param {string} id - ID de l'influenceur à mettre à jour
+ * @param {string} name - Nouveau nom de l'influenceur
+ * @param {string} imageUrl - Nouvelle URL de l'image
+ * @param {string} categoryId - Nouvelle catégorie ID
+ * @returns {object} - Influenceur mis à jour
+ * @throws {404} - Si l'influenceur n'est pas trouvé
+ * @throws {500} - Erreur serveur lors de la mise à jour
+ */
+app.put("/api/influenceurs/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, imageUrl, categoryId } = req.body;
+
+  try {
+    // Vérifier que l'influenceur existe
+    const existingInfluenceur = await prisma.influenceurs.findUnique({
+      where: { id },
+    });
+
+    if (!existingInfluenceur) {
+      return res.status(404).json({ error: "Influenceur non trouvé" });
+    }
+
+    // Vérifier que la catégorie existe si elle est fournie
+    // Nouvelle logique: si categoryId est fournie mais n'existe pas, on la met à null
+    let finalCategoryId = existingInfluenceur.categoryId;
+    if (categoryId !== undefined) {
+      if (categoryId) {
+        const categoryExists = await prisma.category.findUnique({
+          where: { id: categoryId },
+        });
+        finalCategoryId = categoryExists ? categoryId : null;
+      } else {
+        finalCategoryId = null; // Si categoryId est explicitement null ou ""
+      }
+    }
+
+    // Mettre à jour l'influenceur
+    const updatedInfluenceur = await prisma.influenceurs.update({
+      where: { id },
+      data: {
+        name: name || existingInfluenceur.name,
+        imageUrl: imageUrl || existingInfluenceur.imageUrl,
+        categoryId: finalCategoryId,
+      },
+      include: {
+        votes: {
+          where: { isValidated: true },
+        },
+      },
+    });
+
+    // Formater la réponse avec le voteCount
+    const responseData = {
+      ...updatedInfluenceur,
+      voteCount: updatedInfluenceur.votes ? updatedInfluenceur.votes.length : 0,
+    };
+
+    // Émettre l'événement de mise à jour en temps réel
+    io.emit("influenceursUpdate", { updatedInfluenceur: responseData });
+
+    res.json(responseData);
+  } catch (error) {
+    console.error("Erreur mise à jour influenceur:", error);
+    res.status(500).json({ error: "Erreur lors de la mise à jour" });
   }
 });
 
