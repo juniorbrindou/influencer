@@ -6,7 +6,7 @@ interface ResultsChartProps {
 }
 
 const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
-  const { listInfluenceur: listInfluenceurs, categories } = useVote();
+  const { listInfluenceur: listInfluenceurs, categories, votes } = useVote();
 
   // Trouver la catégorie spéciale
   const specialCategory = categories.find(cat => cat.name === "INFLUENCEUR2LANNEE");
@@ -16,28 +16,54 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
     ? listInfluenceurs.filter(inf => inf.isMain) // Seulement les influenceurs principaux
     : listInfluenceurs.filter(inf => inf.categoryId === categoryId); // Filtre normal par catégorie
 
+  // Compter les votes spéciaux validés pour chaque influenceur (uniquement pour la catégorie spéciale)
+  const getSpecialVotesCount = (influenceurId: string) => {
+    return votes.filter(vote =>
+      vote.influenceurId === influenceurId &&
+      vote.isSpecial === true &&
+      vote.isValidated === true
+    ).length;
+  };
+
   // État local pour stocker les influenceurs triés par nombre de votes
   const [sortedInfluenceurs, setSortedInfluenceurs] = useState(
-    [...influenceursToShow].sort((a, b) => b.voteCount - a.voteCount)
+    [...influenceursToShow].sort((a, b) => {
+      // Pour la catégorie spéciale, utiliser le compte de votes spéciaux
+      if (categoryId === specialCategory?.id) {
+        return getSpecialVotesCount(b.id) - getSpecialVotesCount(a.id);
+      }
+      return b.voteCount - a.voteCount;
+    })
   );
 
   const [animatedBars, setAnimatedBars] = useState<boolean>(false);
 
   // Calcul du total des votes pour la catégorie
   const totalVotes = influenceursToShow.reduce(
-    (total, influenceur) => total + influenceur.voteCount,
+    (total, influenceur) => {
+      // Pour la catégorie spéciale, utiliser le compte de votes spéciaux
+      if (categoryId === specialCategory?.id) {
+        return total + getSpecialVotesCount(influenceur.id);
+      }
+      return total + influenceur.voteCount;
+    },
     0
   );
 
   useEffect(() => {
-    const sorted = [...influenceursToShow].sort((a, b) => b.voteCount - a.voteCount);
+    const sorted = [...influenceursToShow].sort((a, b) => {
+      if (categoryId === specialCategory?.id) {
+        return getSpecialVotesCount(b.id) - getSpecialVotesCount(a.id);
+      }
+      return b.voteCount - a.voteCount;
+    });
     setSortedInfluenceurs(sorted);
     setAnimatedBars(false);
 
     setTimeout(() => {
       setAnimatedBars(true);
     }, 300);
-  }, [listInfluenceurs, categoryId]); // Ajout de categoryId comme dépendance
+  }, [listInfluenceurs, categoryId, votes]); // Ajout de votes comme dépendance
 
   if (influenceursToShow.length === 0) {
     return (
@@ -53,7 +79,12 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
 
       <div className="space-y-6">
         {sortedInfluenceurs.map((influenceur) => {
-          const percentage = totalVotes > 0 ? (influenceur.voteCount / totalVotes) * 100 : 0;
+          // Pour la catégorie spéciale, utiliser le compte de votes spéciaux
+          const voteCount = categoryId === specialCategory?.id
+            ? getSpecialVotesCount(influenceur.id)
+            : influenceur.voteCount;
+
+          const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
 
           return (
             <div key={influenceur.id} className="space-y-2">
@@ -69,7 +100,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
                   <span className="font-medium">{influenceur.name}</span>
                 </div>
                 <span className="font-semibold text-[#6C63FF]">
-                  {influenceur.voteCount} votes
+                  {voteCount} votes
                 </span>
               </div>
 
