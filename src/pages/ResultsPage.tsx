@@ -19,24 +19,23 @@ const ResultsPage: React.FC = () => {
   }, [categories]);
 
   // Chargement des résultats quand la catégorie change
-  useEffect(() => {
-    if (selectedCategory) {
-      const loadResults = async () => {
-        setIsLoading(true);
-        try {
-          const results = await fetchResults(selectedCategory);
-          setCurrentResults(results);
-        } catch (error) {
-          console.error("Failed to load results", error);
-        } finally {
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 800);
-        }
-      };
-      loadResults();
-    }
-  }, [selectedCategory, fetchResults]);
+  // useEffect(() => {
+  //   if (selectedCategory) {
+  //     const loadResults = async () => {
+  //       try {
+  //         const results = await fetchResults(selectedCategory);
+  //         setCurrentResults(results);
+  //       } catch (error) {
+  //         console.error("Failed to load results", error);
+  //       } finally {
+  //         setTimeout(() => {
+  //           setIsLoading(false);
+  //         }, 800);
+  //       }
+  //     };
+  //     loadResults();
+  //   }
+  // }, [selectedCategory, fetchResults]);
 
   if (isLoading && !currentResults) {
     return <Loader />;
