@@ -28,7 +28,7 @@ const httpServer = createServer(app);
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "https://influenceur2lannee.com"],
+    origin: ["http://localhost:5173", "https://influenceur2lannee.com", "https://wwww.influenceur2lannee.com"],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -149,9 +149,7 @@ io.on("connection", (socket) => {
             );
             socket.emit("voteError", "Vous avez déjà utilisé vos deux votes");
           } else {
-            console.log(
-              "le vote nest pas pas special. Il a deja voté: "
-            );
+            console.log("le vote nest pas pas special. Il a deja voté: ");
             socket.emit(
               "voteError",
               "Votez d'abord dans une catégorie normale"
@@ -492,6 +490,23 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Client déconnecté:", socket.id);
   });
+});
+
+app.delete("/api/votes/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.votes.delete({
+      where: { id },
+    });
+
+    // Émettre la mise à jour via Socket.IO
+    io.emit("voteDeleted", { voteId: id });
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la suppression" });
+  }
 });
 
 // Routes pour les catégories
