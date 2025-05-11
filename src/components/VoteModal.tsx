@@ -44,6 +44,8 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
   } = useVote();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [minLoadingDone, setMinLoadingDone] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const navigate = useNavigate();
 
 
@@ -65,6 +67,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
   };
 
   const handleVoteAction = async (action: () => Promise<void>) => {
+    setIsSubmitting(true);
     setIsRedirecting(true);
     setMinLoadingDone(false);
 
@@ -81,7 +84,10 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
 
       navigate('/confirmation');
     } catch (error) {
+      setIsSubmitting(false);
       setIsRedirecting(false);
+    } finally {
+      setIsSubmitting(false); // S'assurer qu'il est réinitialisé dans tous les cas
     }
   };
 
@@ -168,10 +174,10 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
 
               <button
                 type="submit"
-                disabled={isLoading}
-                className={`w-full py-2 bg-black text-yellow-500 rounded-md transition-all duration-300 ${isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-black'}`}
+                disabled={isSubmitting || isLoading}
+                className={`w-full py-2 bg-black text-yellow-500 rounded-md transition-all duration-300 ${isSubmitting || isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-black'}`}
               >
-                {isLoading ? 'Enregistrement...' : 'Confirmer mon vote'}
+                {isSubmitting ? 'Enregistrement...' : 'Confirmer mon vote'}
               </button>
             </form>
           </div>
