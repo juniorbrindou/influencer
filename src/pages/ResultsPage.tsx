@@ -2,18 +2,43 @@ import React, { useState, useEffect } from 'react';
 import ResultsChart from '../components/ResultsChart';
 import { useVote } from '../context/useVote';
 import { Loader } from '../components/Loader';
+import { ClassementData } from '../types';
 
 const ResultsPage: React.FC = () => {
-  const { categories, isLoading } = useVote();
+  const { categories, fetchResults } = useVote();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentResults, setCurrentResults] = useState<ClassementData | null>(null);
 
+  // Chargement initial des catégories
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
       setSelectedCategory(categories[0].id);
+      setIsLoading(false);
     }
   }, [categories]);
 
-  if (isLoading) {
+  // Chargement des résultats quand la catégorie change
+  useEffect(() => {
+    if (selectedCategory) {
+      const loadResults = async () => {
+        setIsLoading(true);
+        try {
+          const results = await fetchResults(selectedCategory);
+          setCurrentResults(results);
+        } catch (error) {
+          console.error("Failed to load results", error);
+        } finally {
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 800);
+        }
+      };
+      loadResults();
+    }
+  }, [selectedCategory, fetchResults]);
+
+  if (isLoading && !currentResults) {
     return <Loader />;
   }
 
@@ -37,6 +62,7 @@ const ResultsPage: React.FC = () => {
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
             value={selectedCategory || ''}
             onChange={(e) => setSelectedCategory(e.target.value)}
+            disabled={isLoading}
           >
             {categories.map((category) => (
               <option
@@ -54,10 +80,21 @@ const ResultsPage: React.FC = () => {
         )}
       </div>
 
-      {selectedCategory && (
-        <div className="max-w-3xl mx-auto">
-          <ResultsChart categoryId={selectedCategory} />
+      {isLoading && currentResults ? (
+        <div className="max-w-3xl mx-auto relative">
+          <div className="opacity-50">
+            <ResultsChart categoryId={selectedCategory as string} />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader />
+          </div>
         </div>
+      ) : (
+        selectedCategory && (
+          <div className="max-w-3xl mx-auto">
+            <ResultsChart key={selectedCategory} categoryId={selectedCategory} />
+          </div>
+        )
       )}
     </div>
   );

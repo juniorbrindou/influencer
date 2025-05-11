@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useVote } from '../context/useVote';
+import { ClassementData } from '../types';
 
 interface ResultsChartProps {
   categoryId: string;
@@ -7,34 +8,37 @@ interface ResultsChartProps {
 
 const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
   const { fetchResults } = useVote();
-  const [results, setResults] = useState<{
-    influenceurs: Array<{
-      id: string;
-      name: string;
-      imageUrl: string;
-      voteCount: number;
-    }>;
-    totalVotes: number;
-    isSpecialCategory: boolean;
-  } | null>(null);
+  const [results, setResults] = useState<ClassementData | null>(null);
   const [animatedBars, setAnimatedBars] = useState(false);
 
+  // Réinitialise et relance l'animation à chaque changement de catégorie
   useEffect(() => {
-    const loadResults = async () => {
-      try {
-        const data = await fetchResults(categoryId);
-        setResults(data);
-        setAnimatedBars(false);
+    let isMounted = true;
 
-        setTimeout(() => {
-          setAnimatedBars(true);
-        }, 300);
+    const loadDataAndAnimate = async () => {
+      try {
+        // 1. Désactive l'animation pendant le chargement
+        if (isMounted) setAnimatedBars(false);
+
+        // 2. Charge les nouvelles données
+        const data = await fetchResults(categoryId);
+        if (isMounted) setResults(data);
+
+        // 3. Attend un court instant avant de lancer l'animation
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // 4. Active l'animation
+        if (isMounted) setAnimatedBars(true);
       } catch (error) {
         console.error("Failed to load results", error);
       }
     };
 
-    loadResults();
+    loadDataAndAnimate();
+
+    return () => {
+      isMounted = false;
+    };
   }, [categoryId, fetchResults]);
 
   if (!results) {
