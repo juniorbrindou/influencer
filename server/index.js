@@ -547,6 +547,7 @@ app.get("/api/influenceurs", async (req, res) => {
         id: true,
         name: true,
         imageUrl: true,
+        isMain: true,
         categoryId: true,
         votes: {
           where: { isValidated: true },
