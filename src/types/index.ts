@@ -9,9 +9,11 @@ export interface Influenceur {
 }
 
 export interface Vote {
+  id: string;
   influenceurId: string;
   phoneNumber: string;
   timestamp: number;
+  isSpecial: boolean;
 }
 
 export interface AdminCredentials {

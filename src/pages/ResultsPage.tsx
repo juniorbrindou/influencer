@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ResultsChart from '../components/ResultsChart';
 import { useVote } from '../context/useVote';
+import { Loader } from '../components/Loader';
 
 const ResultsPage: React.FC = () => {
   const { categories, isLoading } = useVote();
@@ -13,7 +14,7 @@ const ResultsPage: React.FC = () => {
   }, [categories]);
 
   if (isLoading) {
-    return <div className="text-center py-8">Chargement en cours...</div>;
+    return <Loader />;
   }
 
   return (
