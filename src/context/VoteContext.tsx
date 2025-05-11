@@ -459,8 +459,8 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * @throws {Error} Si la requête échoue
    */
   const submitVote = async (selectedInfluenceur: Influenceur, phoneNumber: string): Promise<void> => {
-    if (!selectedInfluenceur || !phoneNumber) {
-      setError("Sélectionnez un influenceur et entrez un numéro de téléphone");
+    if (!selectedInfluenceur) {
+      setError("Sélectionnez un influenceur");
       return;
     }
 
@@ -468,26 +468,39 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       setError(null);
 
-      const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
-
-      console.log("SubmitVote avec :", {
-        influenceurId: selectedInfluenceur.id,
-        phoneNumber: fullPhoneNumber,
-        isSpecialVote: specialVote
-      });
+      // Générer un fingerprint client
+      const fingerprint = await generateFingerprint();
+      console.log('fingerprint pour le vote ', fingerprint);
 
       socket.emit("submitVote", {
         influenceurId: selectedInfluenceur.id,
-        phoneNumber: fullPhoneNumber,
-        isSpecialVote: specialVote // Ceci doit être true uniquement pour la catégorie spéciale
+        phoneNumber,
+        isSpecialVote: specialVote,
+        otp:fingerprint,
       });
-
 
     } catch (error) {
       setIsLoading(false);
       setError('Erreur lors du vote');
       throw error;
     }
+  };
+
+  // Fonction pour générer un fingerprint client
+  const generateFingerprint = async (): Promise<string> => {
+    const fingerprintData = {
+      userAgent: navigator.userAgent,
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      // Ajouter d'autres données non PII si nécessaire
+    };
+
+    // Hasher les données pour créer un identifiant unique
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(fingerprintData));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
   /**
@@ -555,31 +568,31 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   const validateOTP = async (otp: string): Promise<void> => {
-  if (!otp || !selectedInfluenceur || !phoneNumber) {
-    setError("Tous les champs sont requis pour valider le vote.");
-    return;
-  }
+    if (!otp || !selectedInfluenceur || !phoneNumber) {
+      setError("Tous les champs sont requis pour valider le vote.");
+      return;
+    }
 
-  try {
-    setIsLoading(true);
-    setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
+      const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
 
-    socket.emit("validateOTP", {
-      influenceurId: selectedInfluenceur.id,
-      phoneNumber: fullPhoneNumber,
-      otp,
-      isSpecialVote: specialVote // Ajoutez ceci
-    });
-    
-  } catch (error) {
-    setIsLoading(false);
-    console.error('Erreur lors de la validation de l\'OTP:', error);
-    setError('Erreur lors de la validation de l\'OTP');
-    throw error;
-  }
-};
+      socket.emit("validateOTP", {
+        influenceurId: selectedInfluenceur.id,
+        phoneNumber: fullPhoneNumber,
+        otp,
+        isSpecialVote: specialVote // Ajoutez ceci
+      });
+
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Erreur lors de la validation de l\'OTP:', error);
+      setError('Erreur lors de la validation de l\'OTP');
+      throw error;
+    }
+  };
 
 
   return (

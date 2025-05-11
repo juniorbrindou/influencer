@@ -123,12 +123,6 @@ export const useSocket = ({
 
 
 
-
-
-
-
-
-
     socket.on('otpSent', (otp: string) => {
       setReceivedOTP(otp);
       setOtpMessage('Code de validation envoyé');
