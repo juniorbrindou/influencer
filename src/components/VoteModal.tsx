@@ -36,6 +36,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
   const { countryCode, setCountryCode } = useVote();
 
   useEffect(() => {
+    console.log("OTP Message changed:", otpMessage);
     if (otpMessage === 'Code de validation envoyé') {
       setVerificationStep(true);
       setIsSubmitting(false);
@@ -169,7 +170,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                       Votre numéro WhatsApp
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <select
                         value={countryCode}
                         onChange={(e) => setCountryCode(e.target.value)}
@@ -190,6 +191,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
                         className="w-full px-4 py-2 border rounded-md"
                       />
                     </div>
+                    <p className="mt-2 text-sm text-red-600 animate-shake">bonjour</p>
                     {error && <p className="mt-2 text-sm text-red-600 animate-shake">{error}</p>}
                   </div>
 
