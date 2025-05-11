@@ -24,17 +24,18 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
   // Gestion propre du vote depuis la modale
   const handleVoteFromModal = () => {
     setIsPreviewOpen(false);
-    setSpecialVote(isSpecialCategory); // Réactive specialVote si nécessaire
+    if (isSpecialCategory) {
+      setSpecialVote(true); // Active specialVote si nécessaire
+    }
     selectInfluenceur(influenceur);
   };
 
-  
+
 
   return (
-     <>
-      <div className={`group rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-2 ${
-        isSpecialCategory ? 'border-2 border-yellow-500 bg-white' : 'bg-white'
-      }`}>
+    <>
+      <div className={`group rounded-lg shadow-md overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:-translate-y-2 ${isSpecialCategory ? 'border-2 border-yellow-500 bg-white' : 'bg-white'
+        }`}>
         <div
           className="h-48 overflow-hidden cursor-pointer"
           onClick={handlePreviewOpen} // Utilisez la nouvelle fonction
@@ -85,7 +86,7 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
               </div>
 
               <button
-                 onClick={handleVoteFromModal}
+                onClick={handleVoteFromModal}
                 className="w-full py-3 bg-black text-yellow-500 rounded-md hover:bg-yellow-500 hover:text-black transition-all duration-300 font-bold"
               >
                 Voter pour {influenceur.name}

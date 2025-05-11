@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { Influenceur } from "../types";
+import { useEffect } from "react";
 
 interface SecondVoteOfferProps {
   onAccept: () => void;
@@ -14,14 +15,35 @@ const SecondVoteOffer: React.FC<SecondVoteOfferProps> = ({
   influenceur,
   isSpecialCategory
 }) => {
+
+
+  const handleAccept = () => {
+    console.log("Accepting special vote");
+    onAccept();
+  };
+
+  const handleDecline = () => {
+    console.log("Declining special vote");
+    onDecline();
+  };
+
+useEffect(() => {
+    console.log("SecondVoteOffer mounted");
+    return () => console.log("SecondVoteOffer unmounted");
+  }, []);
+
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100] p-4 animate-fadeIn">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn">
+      <div
+        className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn"
+        onClick={(e) => e.stopPropagation()} // Empêche la fermeture quand on clique à l'intérieur
+      >
         {/* En-tête avec le nom de l'influenceur */}
         <div className="flex justify-between items-center p-5 bg-black text-yellow-500">
           <h2 className="text-xl font-semibold">
-            {isSpecialCategory 
-              ? `Vote spécial pour ${influenceur.name}` 
+            {isSpecialCategory
+              ? `Vote spécial pour ${influenceur.name}`
               : `Utiliser votre vote spécial pour ${influenceur.name}`}
           </h2>
           <button
@@ -53,16 +75,12 @@ const SecondVoteOffer: React.FC<SecondVoteOfferProps> = ({
 
           {/* Boutons avec envoi au backend */}
           <div className="flex justify-center space-x-4">
-            <button
-              onClick={onDecline}
+            <button onClick={handleDecline}
               className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors duration-300"
             >
               Annuler
             </button>
-            <button
-              onClick={() => {
-                onAccept();
-              }}
+            <button onClick={handleAccept}
               className="px-6 py-2 bg-black text-yellow-500 rounded-md hover:bg-yellow-500 hover:text-black transition-colors duration-300"
             >
               Confirmer mon vote spécial

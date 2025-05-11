@@ -521,37 +521,66 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * @returns {Promise<void>}
    * @throws {Error} Si la requête échoue
    */
+  // const validateOTP = async (otp: string): Promise<void> => {
+  //   if (!otp || !selectedInfluenceur || !phoneNumber) {
+  //     setError("Tous les champs sont requis pour valider le vote.");
+  //     return;
+  //   }
+
+  //   try {
+  //     setIsLoading(true);
+  //     setError(null);
+
+  //     // Utiliser socket.io pour valider l'OTP
+  //     socket.emit("validateOTP", {
+  //       influenceurId: selectedInfluenceur.id,
+  //       phoneNumber,
+  //       otp
+  //     });
+
+  //     socket.emit("validateOTP", {
+  //       phoneNumber: `${countryCode}${phoneNumber}`, // Format cohérent
+  //       otp
+  //     });
+  //     console.log("Socket -----------------validateOTP-------------");
+
+  //     console.log("Validation de l'OTP:", otp);
+  //   } catch (error) {
+  //     setIsLoading(false);
+  //     console.error('Erreur lors de la validation de l\'OTP:', error);
+  //     setError('Erreur lors de la validation de l\'OTP');
+  //     throw error;
+  //   }
+  // };
+
+
   const validateOTP = async (otp: string): Promise<void> => {
-    if (!otp || !selectedInfluenceur || !phoneNumber) {
-      setError("Tous les champs sont requis pour valider le vote.");
-      return;
-    }
+  if (!otp || !selectedInfluenceur || !phoneNumber) {
+    setError("Tous les champs sont requis pour valider le vote.");
+    return;
+  }
 
-    try {
-      setIsLoading(true);
-      setError(null);
+  try {
+    setIsLoading(true);
+    setError(null);
 
-      // Utiliser socket.io pour valider l'OTP
-      socket.emit("validateOTP", {
-        influenceurId: selectedInfluenceur.id,
-        phoneNumber,
-        otp
-      });
+    const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
 
-      socket.emit("validateOTP", {
-        phoneNumber: `${countryCode}${phoneNumber}`, // Format cohérent
-        otp
-      });
-      console.log("Socket -----------------validateOTP-------------");
+    socket.emit("validateOTP", {
+      influenceurId: selectedInfluenceur.id,
+      phoneNumber: fullPhoneNumber,
+      otp,
+      isSpecialVote: specialVote // Ajoutez ceci
+    });
+    
+  } catch (error) {
+    setIsLoading(false);
+    console.error('Erreur lors de la validation de l\'OTP:', error);
+    setError('Erreur lors de la validation de l\'OTP');
+    throw error;
+  }
+};
 
-      console.log("Validation de l'OTP:", otp);
-    } catch (error) {
-      setIsLoading(false);
-      console.error('Erreur lors de la validation de l\'OTP:', error);
-      setError('Erreur lors de la validation de l\'OTP');
-      throw error;
-    }
-  };
 
   return (
     <VoteContext.Provider
