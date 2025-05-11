@@ -16,13 +16,22 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   console.log('categorie', isSpecialCategory, specialVote);
-  
+
 
   // Reset specialVote quand la modale s'ouvre
   const handlePreviewOpen = () => {
     setSpecialVote(false);
     setIsPreviewOpen(true);
   };
+
+
+  const handleVoteClick = () => {
+    if (isSpecialCategory) {
+      setSpecialVote(true); // Force le vote spécial
+    }
+    selectInfluenceur(influenceur);
+  };
+
 
   // Gestion propre du vote depuis la modale
   const handleVoteFromModal = () => {
@@ -56,7 +65,7 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
           </h3>
 
           <button
-            onClick={() => selectInfluenceur(influenceur)}
+            onClick={handleVoteClick}
             className="w-full py-2 bg-black text-yellow-500 rounded-md hover:bg-yellow-500 hover:text-black transition-all duration-300 transform active:scale-95 hover:shadow-lg"
           >
             Voter
