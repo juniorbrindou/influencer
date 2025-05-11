@@ -118,6 +118,8 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
   };
 
 
+
+
   return (
     <>
       {/* SecondVoteOffer doit être en dehors de la modale principale */}
@@ -133,8 +135,18 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
 
       {/* Contenu principal de la modale */}
       {selectedInfluenceur && !offerSecondVote && !isSpecialCategory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn"
+          onClick={() => {
+            resetSelection();
+            setSpecialVote(false);
+            setShowSpecialCategory(false);
+          }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn"
+            onClick={(e) => e.stopPropagation()} // Empêche la propagation du clic
+          >
 
 
             <div className={`${offerSecondVote ? 'hidden' : 'block'}`}>
@@ -147,10 +159,10 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
                 <button
                   onClick={() => {
                     resetSelection();
-                    setShowSpecialCategory(false);
                     setSpecialVote(false);
+                    setShowSpecialCategory(false);
                   }}
-                  className="p-1 rounded-full hover:bg-yellow-500 hover:text-black transition-all duration-300"
+                  className="p-1 rounded-full hover:bg-yellow-500 hover:text-black transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 >
                   <X className="h-6 w-6" />
                 </button>

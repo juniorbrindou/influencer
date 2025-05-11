@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import InfluenceurCard from '../components/InfluenceurCard';
 import VoteModal from '../components/VoteModal';
@@ -9,25 +9,20 @@ const CategoryPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { listInfluenceur: influenceurs, selectedInfluenceur } = useVote();
   const { categories } = useCategoryManager();
-
-
-// Utilisez selectedCategory pour déterminer le contenu à afficher
-// useEffect(() => {
-//   if (selectedCategory) {
-//     // Faites quelque chose avec la catégorie sélectionnée
-//     console.log("Catégorie sélectionnée:", selectedCategory);
-//   }
-// }, [selectedCategory]);
+  const { setSpecialVote } = useVote();
 
   // Trouver la catégorie spéciale
   const specialCategory = categories.find(cat => cat.name === "INFLUENCEUR2LANNEE");
 
   // Si c'est la catégorie spéciale, on prend tous les influenceurs
   const influenceursToShow = id === specialCategory?.id
-    ? [...influenceurs] // Tous les influenceurs
+    ? influenceurs.filter(inf => inf.isMain)
     : influenceurs.filter(inf => inf.categoryId === id); // Filtre normal
 
   const category = categories.find(cat => cat.id === id);
+  useEffect(() => {
+    setSpecialVote(id === specialCategory?.id);
+  }, [id, specialCategory?.id, setSpecialVote]);
 
   return (
     <>

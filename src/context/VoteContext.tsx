@@ -174,7 +174,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
 
-    
+
 
 
     socket.on("validateSuccess", (validatedVote) => {
@@ -479,8 +479,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       socket.emit("submitVote", {
         influenceurId: selectedInfluenceur.id,
         phoneNumber: fullPhoneNumber,
-        isSpecialVote: specialVote // Assurez-vous que c'est bien passé
+        isSpecialVote: specialVote // Ceci doit être true uniquement pour la catégorie spéciale
       });
+
+
     } catch (error) {
       setIsLoading(false);
       setError('Erreur lors du vote');
