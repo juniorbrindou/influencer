@@ -163,7 +163,8 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                    placeholder="00 00 00 00"
+                    placeholder="00 00 00 00 00"
+                    minLength={8}
                     maxLength={10}
                     className="w-full px-4 py-2 border rounded-md"
                     required
