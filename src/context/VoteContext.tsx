@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { Category, Influenceur, Vote } from '../types';
+import { Category, ClassementData, Influenceur, Vote } from '../types';
 
 
 interface VoteContextType {
@@ -32,6 +32,7 @@ interface VoteContextType {
   setOfferSecondVote: (val: boolean) => void;
   specialVote: boolean;
   setSpecialVote: (val: boolean) => void;
+  fetchResults: (categoryId: string) => Promise<ClassementData>
 }
 
 export const VoteContext = createContext<VoteContextType | undefined>(undefined);
@@ -531,39 +532,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * @returns {Promise<void>}
    * @throws {Error} Si la requête échoue
    */
-  // const validateOTP = async (otp: string): Promise<void> => {
-  //   if (!otp || !selectedInfluenceur || !phoneNumber) {
-  //     setError("Tous les champs sont requis pour valider le vote.");
-  //     return;
-  //   }
-
-  //   try {
-  //     setIsLoading(true);
-  //     setError(null);
-
-  //     // Utiliser socket.io pour valider l'OTP
-  //     socket.emit("validateOTP", {
-  //       influenceurId: selectedInfluenceur.id,
-  //       phoneNumber,
-  //       otp
-  //     });
-
-  //     socket.emit("validateOTP", {
-  //       phoneNumber: `${countryCode}${phoneNumber}`, // Format cohérent
-  //       otp
-  //     });
-  //     console.log("Socket -----------------validateOTP-------------");
-
-  //     console.log("Validation de l'OTP:", otp);
-  //   } catch (error) {
-  //     setIsLoading(false);
-  //     console.error('Erreur lors de la validation de l\'OTP:', error);
-  //     setError('Erreur lors de la validation de l\'OTP');
-  //     throw error;
-  //   }
-  // };
-
-
   const validateOTP = async (otp: string): Promise<void> => {
     if (!otp || !selectedInfluenceur || !phoneNumber) {
       setError("Tous les champs sont requis pour valider le vote.");
@@ -587,6 +555,35 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
       console.error('Erreur lors de la validation de l\'OTP:', error);
       setError('Erreur lors de la validation de l\'OTP');
+      throw error;
+    }
+  };
+
+
+  /**
+   * Recuperer les utilisateurs de maniere filtrée et rangée pour la partie classement
+   * @param categoryId 
+   * @returns promise
+   */
+  const fetchResults = async (categoryId: string): Promise<ClassementData>  => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(BACKEND_URL + `/api/results/${categoryId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur réseau: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur chargement résultats:', error);
+      setError('Erreur chargement résultats');
       throw error;
     }
   };
@@ -621,6 +618,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOfferSecondVote,
         specialVote,
         setSpecialVote,
+        fetchResults,
       }}
     >
       {socketConnected ? null : (

@@ -14,6 +14,7 @@ export interface Vote {
   phoneNumber: string;
   timestamp: number;
   isSpecial: boolean;
+  isValidated: boolean;
 }
 
 export interface AdminCredentials {
@@ -27,4 +28,16 @@ export interface Category {
   description?: string;
   imageUrl: string | File;
   influenceurs?: Influenceur[];
+}
+
+export interface ClassementData {
+  influenceurs: Array<{
+    id: string;
+    name: string;
+    imageUrl: string;
+    voteCount: number;
+    isMain?: boolean; // Optionnel selon vos besoins
+  }>;
+  totalVotes: number;
+  isSpecialCategory: boolean;
 }

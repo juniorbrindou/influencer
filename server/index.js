@@ -509,6 +509,72 @@ app.delete("/api/votes/:id", async (req, res) => {
   }
 });
 
+
+app.get("/api/results/:categoryId", async (req, res) => {
+  const { categoryId } = req.params;
+
+  try {
+    // Trouver la catégorie spéciale
+    const specialCategory = await prisma.category.findFirst({
+      where: { name: "INFLUENCEUR2LANNEE" }
+    });
+
+    // Récupérer les influenceurs avec leurs votes
+    const influenceurs = await prisma.influenceurs.findMany({
+      where: {
+        OR: [
+          { categoryId },
+          ...(categoryId === specialCategory?.id ? [{ isMain: true }] : [])
+        ]
+      },
+      include: {
+        votes: {
+          where: { isValidated: true },
+          select: { id: true, isSpecial: true }
+        },
+        category: true
+      }
+    });
+
+    // Calculer les totaux et formater les données
+    const isSpecialCategory = categoryId === specialCategory?.id;
+    
+    const formattedResults = influenceurs.map(inf => {
+      const voteCount = isSpecialCategory
+        ? inf.votes.filter(v => v.isSpecial).length
+        : inf.votes.length;
+
+      return {
+        id: inf.id,
+        name: inf.name,
+        imageUrl: inf.imageUrl,
+        voteCount,
+        isMain: inf.isMain
+      };
+    });
+
+    // Calculer le total des votes pour la catégorie
+    const totalVotes = formattedResults.reduce((sum, inf) => sum + inf.voteCount, 0);
+
+    // Trier par nombre de votes décroissant
+    const sortedResults = formattedResults.sort((a, b) => b.voteCount - a.voteCount);
+
+    res.json({
+      influenceurs: sortedResults,
+      totalVotes,
+      isSpecialCategory
+    });
+  } catch (error) {
+    console.error("Erreur récupération résultats:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+
+
+
+
+
 // Routes pour les catégories
 app.get("/api/categories", async (req, res) => {
   try {

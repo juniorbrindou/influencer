@@ -7,7 +7,7 @@ export const Loader: React.FC = () => {
         <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-yellow-500 border-r-yellow-500 animate-spin"></div>
         <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-yellow-500 border-l-yellow-500 animate-spin-reverse"></div>
       </div>
-      <p className="text-white text-lg font-medium">Enregistrement de votre vote...</p>
+      <p className="text-white text-lg font-medium">Veuillez patienter ...</p>
     </div>
   );
 };
