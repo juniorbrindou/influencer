@@ -8,23 +8,17 @@ interface ResultsChartProps {
 const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
   const { listInfluenceur: listInfluenceurs, categories } = useVote();
 
-  // Filtrer les influenceurs par catégorie
-  const influenceursByCategory = listInfluenceurs.filter(
-    (influenceur) => influenceur.categoryId === categoryId
-  );
-
   // Trouver la catégorie spéciale
   const specialCategory = categories.find(cat => cat.name === "INFLUENCEUR2LANNEE");
 
-  // Si c'est la catégorie spéciale, on prend tous les influenceurs
+  // Si c'est la catégorie spéciale, on prend uniquement les influenceurs avec isMain=true
   const influenceursToShow = categoryId === specialCategory?.id
-    ? [...listInfluenceurs] // Tous les influenceurs
-    : listInfluenceurs.filter(inf => inf.categoryId === categoryId); // Filtre normal
-
+    ? listInfluenceurs.filter(inf => inf.isMain) // Seulement les influenceurs principaux
+    : listInfluenceurs.filter(inf => inf.categoryId === categoryId); // Filtre normal par catégorie
 
   // État local pour stocker les influenceurs triés par nombre de votes
   const [sortedInfluenceurs, setSortedInfluenceurs] = useState(
-    [...influenceursByCategory].sort((a, b) => b.voteCount - a.voteCount)
+    [...influenceursToShow].sort((a, b) => b.voteCount - a.voteCount)
   );
 
   const [animatedBars, setAnimatedBars] = useState<boolean>(false);
@@ -36,7 +30,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
   );
 
   useEffect(() => {
-    const sorted = [...influenceursByCategory].sort((a, b) => b.voteCount - a.voteCount);
+    const sorted = [...influenceursToShow].sort((a, b) => b.voteCount - a.voteCount);
     setSortedInfluenceurs(sorted);
     setAnimatedBars(false);
 
@@ -45,7 +39,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
     }, 300);
   }, [listInfluenceurs, categoryId]); // Ajout de categoryId comme dépendance
 
-  if (influenceursByCategory.length === 0) {
+  if (influenceursToShow.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6 text-center">
         <p className="text-gray-600">Aucun influenceur dans cette catégorie pour le moment.</p>

@@ -58,6 +58,13 @@ const AdminDashboard: React.FC = () => {
     lastUpdated: new Date()
   });
 
+  // Trouver la catégorie spéciale
+  const specialCategory = categories.find(cat => cat.name === "INFLUENCEUR2LANNEE");
+
+  // Déterminer si le bouton d'ajout doit être affiché
+  const showAddInfluenceurButton = selectedCategory && selectedCategory !== specialCategory?.id;
+
+
   // Calcul des statistiques
   useEffect(() => {
     const totalVotes = influenceurs.reduce((total, influenceur) => {
@@ -118,60 +125,13 @@ const AdminDashboard: React.FC = () => {
   };
 
 
-  // // Ajoutez ces fonctions pour gérer les catégories
-  // const handleAddCategory = async () => {
-  //   if (!newCategory?.name) return;
 
-  //   try {
-  //     let imageUrl = '';
-  //     if (newCategory.imageUrl instanceof File) {
-  //       imageUrl = await uploadImage(newCategory.imageUrl);
-  //     } else if (newCategory.imageUrl) {
-  //       imageUrl = newCategory.imageUrl;
-  //     }
-
-  //     await addCategory({
-  //       name: newCategory.name,
-  //       imageUrl
-  //     });
-  //     setShowCategoryForm(false);
-  //   } catch (error) {
-  //     console.error('Erreur lors de l\'ajout de la catégorie:', error);
-  //   }
-  // };
 
   const handleDeleteCategory = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
       await removeCategory(id);
     }
   };
-
-
-  // const uploadImage = async (file: File): Promise<string> => {
-  //   const formData = new FormData();
-  //   formData.append('image', file);
-
-  //   // Remplacez BACKEND_URL par l'URL de votre backend
-  //   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
-  //   try {
-  //     const response = await fetch(`${BACKEND_URL}/api/upload`, {
-  //       method: 'POST',
-  //       credentials: 'include',
-  //       body: formData,
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error('Échec du téléchargement de l\'image');
-  //     }
-
-  //     const data = await response.json();
-  //     return data.imageUrl;
-  //   } catch (error) {
-  //     console.error('Erreur lors de l\'upload:', error);
-  //     throw error;
-  //   }
-  // };
 
 
   const handleSaveEditCategory = async () => {
@@ -492,34 +452,55 @@ const AdminDashboard: React.FC = () => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       {/* Section Gestion des Influenceurs */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800">Gestion des influenceurs</h2>
-          <button
-            onClick={() => {
-              setIsAddingInfluenceur(!isAddingInfluenceur);
-              setNewInfluenceur({
-                name: '',
-                imageUrl: '',
-                categoryId: selectedCategory || ''
-              });
-            }}
-            className="px-4 py-2 bg-[#6C63FF] text-white rounded-md hover:bg-[#5a52e0] transition-colors flex items-center"
-            disabled={!selectedCategory}
-          >
-            {isAddingInfluenceur ? (
-              <>
-                <X className="h-4 w-4 mr-2" />
-                Annuler
-              </>
-            ) : (
-              <>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Ajouter un Influenceur
-              </>
-            )}
-          </button>
+          {showAddInfluenceurButton && (
+            <button
+              onClick={() => {
+                setIsAddingInfluenceur(!isAddingInfluenceur);
+                setNewInfluenceur({
+                  name: '',
+                  imageUrl: '',
+                  categoryId: selectedCategory || ''
+                });
+              }}
+              className="px-4 py-2 bg-[#6C63FF] text-white rounded-md hover:bg-[#5a52e0] transition-colors flex items-center"
+            >
+              {isAddingInfluenceur ? (
+                <>
+                  <X className="h-4 w-4 mr-2" />
+                  Annuler
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Ajouter un Influenceur
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Formulaire d'ajout d'influenceur (conditionnel) */}
@@ -659,7 +640,13 @@ const AdminDashboard: React.FC = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {influenceurs
-                .filter(influenceur => !selectedCategory || influenceur.categoryId === selectedCategory)
+                .filter(influenceur => {
+                  if (!selectedCategory) return false; // Ne rien afficher quand "Toutes les catégories" est sélectionné
+                  if (selectedCategory === specialCategory?.id) {
+                    return influenceur.isMain; // Seulement les influenceurs principaux pour la catégorie spéciale
+                  }
+                  return influenceur.categoryId === selectedCategory; // Filtre normal pour les autres catégories
+                })
                 .map((influenceur, index) => {
                   const category = categories.find(cat => cat.id === influenceur.categoryId);
                   return (
@@ -742,13 +729,19 @@ const AdminDashboard: React.FC = () => {
                   );
                 })}
               {/* Ligne affichée si la liste des influenceurs est vide */}
-              {influenceurs.length === 0 && !isAddingInfluenceur && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    Aucun influenceur à afficher. Cliquez sur "Ajouter un Influenceur" pour commencer.
-                  </td>
-                </tr>
-              )}
+              {influenceurs.filter(influenceur => {
+                if (!selectedCategory) return false;
+                if (selectedCategory === specialCategory?.id) return influenceur.isMain;
+                return influenceur.categoryId === selectedCategory;
+              }).length === 0 && !isAddingInfluenceur && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      {!selectedCategory ? "Sélectionnez une catégorie spécifique pour voir les influenceurs" :
+                        selectedCategory === specialCategory?.id ? "Aucun influenceur principal dans cette catégorie" :
+                          "Aucun influenceur dans cette catégorie"}
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>
