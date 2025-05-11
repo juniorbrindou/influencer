@@ -4,6 +4,8 @@ import { useVote } from '../context/useVote';
 import SecondVoteOffer from './SecondVoteOffer';
 import countryCodes from '../data/countryCodes.json';
 import { Influenceur } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { Loader } from './Loader';
 
 interface VoteModalProps {
   isSpecialCategory?: boolean;
@@ -38,14 +40,17 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
     countryCode,
     setCountryCode,
     error,
-    // setError,
     isLoading
   } = useVote();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [minLoadingDone, setMinLoadingDone] = useState(false);
+  const navigate = useNavigate();
+
 
   const handleAcceptSpecialVote = async () => {
     setSpecialVote(true);
     setOfferSecondVote(false);
-    await submitVote(selectedInfluenceur!, phoneNumber);
+    handleVoteAction(() => submitVote(selectedInfluenceur!, phoneNumber));
   };
 
   const handleDeclineSpecialVote = () => {
@@ -56,20 +61,49 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // setError(null);
-
-    // if (!phoneNumber || phoneNumber.length < 8) {
-    //   setError('Numéro invalide');
-    //   return;
-    // }
-
-    await submitVote(selectedInfluenceur!, phoneNumber);
+    handleVoteAction(() => submitVote(selectedInfluenceur!, phoneNumber));
   };
+
+  const handleVoteAction = async (action: () => Promise<void>) => {
+    setIsRedirecting(true);
+    setMinLoadingDone(false);
+
+    const startTime = Date.now();
+
+    try {
+      await action();
+
+      // Calcul du temps restant pour atteindre 1 seconde
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(1300 - elapsed, 0);
+
+      await new Promise(resolve => setTimeout(resolve, remaining));
+
+      navigate('/confirmation');
+    } catch (error) {
+      setIsRedirecting(false);
+    }
+  };
+
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (isRedirecting) {
+      timer = setTimeout(() => {
+        setMinLoadingDone(true);
+      }, 1000); // Minimum 1 seconde
+    }
+
+    return () => clearTimeout(timer);
+  }, [isRedirecting]);
 
   if (!selectedInfluenceur) return null;
 
   return (
     <>
+      {isRedirecting && <Loader />}
+
       {offerSecondVote ? (
         <SecondVoteOffer
           onAccept={handleAcceptSpecialVote}
@@ -79,9 +113,9 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
         />
       ) : (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn"
-             onClick={resetSelection}>
+          onClick={resetSelection}>
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn"
-               onClick={(e) => e.stopPropagation()}>
+            onClick={(e) => e.stopPropagation()}>
 
             <div className="flex justify-between items-center p-5 bg-black text-yellow-500">
               <h2 className="text-xl font-semibold">

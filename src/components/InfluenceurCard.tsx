@@ -15,6 +15,9 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
   const { selectInfluenceur, specialVote, setSpecialVote } = useVote();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+  console.log('categorie', isSpecialCategory, specialVote);
+  
+
   // Reset specialVote quand la modale s'ouvre
   const handlePreviewOpen = () => {
     setSpecialVote(false);
@@ -29,7 +32,6 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
     }
     selectInfluenceur(influenceur);
   };
-
 
 
   return (

@@ -170,12 +170,9 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     socket.on("voteSuccess", (vote) => {
       console.log("Vote enregistré avec succès:", vote);
       setIsLoading(false);
+      setVotes(prev => [...prev, vote]); // Mettre à jour les votes
       resetSelection();
     });
-
-
-
-
 
     socket.on("validateSuccess", (validatedVote) => {
       console.log("Vote validé avec succès:", validatedVote);
@@ -476,7 +473,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         influenceurId: selectedInfluenceur.id,
         phoneNumber,
         isSpecialVote: specialVote,
-        otp:fingerprint,
+        otp: fingerprint,
       });
 
     } catch (error) {

@@ -1,10 +1,22 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCategoryManager } from '../context/useCartegoryManager';
+import { Category } from '../types';
 
 const HomePage: React.FC = () => {
   const { categories } = useCategoryManager();
   const navigate = useNavigate();
+
+  const gotTocategories = (category: Category) => {
+    // if (category.name == 'INFLUENCEUR2LANNEE') {
+    //   setOfferSecondVote(true)
+    // }
+    navigate(`/category/${category.id}`)
+  }
+
+
+
+
 
   return (
     <div>
@@ -40,9 +52,9 @@ const HomePage: React.FC = () => {
         {/* Nouvelle grille avec cartes prenant la moitié de l'écran */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {categories.map(category => (
-            <div 
+            <div
               key={category.id}
-              onClick={() => navigate(`/category/${category.id}`)}
+              onClick={() => gotTocategories(category)}
               className="group relative bg-white rounded-xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 cursor-pointer animate-slideIn"
             >
               {/* Conteneur d'image avec ratio 4:3 */}
