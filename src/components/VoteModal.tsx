@@ -139,7 +139,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Votre numéro WhatsApp
+                  Votre numéro de téléphone
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <select
