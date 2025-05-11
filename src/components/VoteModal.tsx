@@ -70,24 +70,31 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
     setIsSubmitting(true);
     setIsRedirecting(true);
     setMinLoadingDone(false);
+    // setError(null);
 
     const startTime = Date.now();
+    let shouldRedirect = false;
 
     try {
       await action();
+      shouldRedirect = true;
 
-      // Calcul du temps restant pour atteindre 1 seconde
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(1300 - elapsed, 0);
 
       await new Promise(resolve => setTimeout(resolve, remaining));
-
-      navigate('/confirmation');
     } catch (error) {
+      console.error('Erreur lors du vote:', error);
+      shouldRedirect = false;
+      // L'erreur est déjà affichée via setError dans le contexte
+    } finally {
       setIsSubmitting(false);
       setIsRedirecting(false);
-    } finally {
-      setIsSubmitting(false); // S'assurer qu'il est réinitialisé dans tous les cas
+
+      // Redirection SEULEMENT si tout est OK
+      if (shouldRedirect) {
+        navigate('/confirmation');
+      }
     }
   };
 

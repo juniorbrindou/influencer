@@ -156,7 +156,7 @@ io.on("connection", (socket) => {
             console.log("le vote nest pas pas special. Il a deja voté: ");
             socket.emit(
               "voteError",
-              "Votez d'abord dans une catégorie normale"
+              "Vous avez déjà effectué un vote depuis ce terminal"
             );
 
             // console.log('pour renvoyer vers la modale de vote special');

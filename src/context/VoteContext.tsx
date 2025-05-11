@@ -459,30 +459,86 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const submitVote = async (selectedInfluenceur: Influenceur, phoneNumber: string): Promise<void> => {
     if (!selectedInfluenceur) {
       setError("Sélectionnez un influenceur");
-      return;
+      return Promise.reject("Aucun influenceur sélectionné");
     }
 
-    try {
-      setIsLoading(true);
-      setError(null);
+    return new Promise((resolve, reject) => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      // Générer un fingerprint client
-      const fingerprint = await generateFingerprint();
-      console.log('fingerprint pour le vote ', fingerprint);
+        // Générer un fingerprint client
+        generateFingerprint().then(fingerprint => {
+          console.log('fingerprint pour le vote ', fingerprint);
 
-      socket.emit("submitVote", {
-        influenceurId: selectedInfluenceur.id,
-        phoneNumber,
-        isSpecialVote: specialVote,
-        otp: fingerprint,
-      });
+          // Écouteurs temporaires pour gérer la réponse
+          const handleSuccess = () => {
+            cleanup();
+            resolve();
+          };
 
-    } catch (error) {
-      setIsLoading(false);
-      setError('Erreur lors du vote');
-      throw error;
-    }
+          const handleError = (errorMessage: string) => {
+            cleanup();
+            reject(errorMessage);
+          };
+
+          const cleanup = () => {
+            socket.off('voteSuccess', handleSuccess);
+            socket.off('voteError', handleError);
+          };
+
+          // Configurer les écouteurs
+          socket.once('voteSuccess', handleSuccess);
+          socket.once('voteError', handleError);
+
+          // Émettre le vote
+          socket.emit("submitVote", {
+            influenceurId: selectedInfluenceur.id,
+            phoneNumber,
+            isSpecialVote: specialVote,
+            otp: fingerprint,
+          });
+
+          // Timeout au cas où le serveur ne répond pas
+          setTimeout(() => {
+            cleanup();
+            reject("Timeout - Pas de réponse du serveur");
+          }, 10000);
+        });
+      } catch (error) {
+        setIsLoading(false);
+        reject('Erreur lors du vote');
+      }
+    });
   };
+
+  // const submitVote = async (selectedInfluenceur: Influenceur, phoneNumber: string): Promise<void> => {
+  //   if (!selectedInfluenceur) {
+  //     setError("Sélectionnez un influenceur");
+  //     return;
+  //   }
+
+  //   try {
+  //     setIsLoading(true);
+  //     setError(null);
+
+  //     // Générer un fingerprint client
+  //     const fingerprint = await generateFingerprint();
+  //     console.log('fingerprint pour le vote ', fingerprint);
+
+  //     socket.emit("submitVote", {
+  //       influenceurId: selectedInfluenceur.id,
+  //       phoneNumber,
+  //       isSpecialVote: specialVote,
+  //       otp: fingerprint,
+  //     });
+
+  //   } catch (error) {
+  //     setIsLoading(false);
+  //     setError('Erreur lors du vote');
+  //     throw error;
+  //   }
+  // };
 
   // Fonction pour générer un fingerprint client
   const generateFingerprint = async (): Promise<string> => {
@@ -565,7 +621,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * @param categoryId 
    * @returns promise
    */
-  const fetchResults = async (categoryId: string): Promise<ClassementData>  => {
+  const fetchResults = async (categoryId: string): Promise<ClassementData> => {
     try {
       setIsLoading(true);
       const response = await fetch(BACKEND_URL + `/api/results/${categoryId}`, {
