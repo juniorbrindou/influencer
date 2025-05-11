@@ -28,7 +28,11 @@ const httpServer = createServer(app);
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "https://influenceur2lannee.com", "https://wwww.influenceur2lannee.com"],
+    origin: [
+      "http://localhost:5173",
+      "https://influenceur2lannee.com",
+      "https://wwww.influenceur2lannee.com",
+    ],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -509,14 +513,13 @@ app.delete("/api/votes/:id", async (req, res) => {
   }
 });
 
-
 app.get("/api/results/:categoryId", async (req, res) => {
   const { categoryId } = req.params;
 
   try {
     // Trouver la catégorie spéciale
     const specialCategory = await prisma.category.findFirst({
-      where: { name: "INFLUENCEUR2LANNEE" }
+      where: { name: "INFLUENCEUR2LANNEE" },
     });
 
     // Récupérer les influenceurs avec leurs votes
@@ -524,24 +527,24 @@ app.get("/api/results/:categoryId", async (req, res) => {
       where: {
         OR: [
           { categoryId },
-          ...(categoryId === specialCategory?.id ? [{ isMain: true }] : [])
-        ]
+          ...(categoryId === specialCategory?.id ? [{ isMain: true }] : []),
+        ],
       },
       include: {
         votes: {
           where: { isValidated: true },
-          select: { id: true, isSpecial: true }
+          select: { id: true, isSpecial: true },
         },
-        category: true
-      }
+        category: true,
+      },
     });
 
     // Calculer les totaux et formater les données
     const isSpecialCategory = categoryId === specialCategory?.id;
-    
-    const formattedResults = influenceurs.map(inf => {
+
+    const formattedResults = influenceurs.map((inf) => {
       const voteCount = isSpecialCategory
-        ? inf.votes.filter(v => v.isSpecial).length
+        ? inf.votes.filter((v) => v.isSpecial).length
         : inf.votes.length;
 
       return {
@@ -549,31 +552,31 @@ app.get("/api/results/:categoryId", async (req, res) => {
         name: inf.name,
         imageUrl: inf.imageUrl,
         voteCount,
-        isMain: inf.isMain
+        isMain: inf.isMain,
       };
     });
 
     // Calculer le total des votes pour la catégorie
-    const totalVotes = formattedResults.reduce((sum, inf) => sum + inf.voteCount, 0);
+    const totalVotes = formattedResults.reduce(
+      (sum, inf) => sum + inf.voteCount,
+      0
+    );
 
     // Trier par nombre de votes décroissant
-    const sortedResults = formattedResults.sort((a, b) => b.voteCount - a.voteCount);
+    const sortedResults = formattedResults.sort(
+      (a, b) => b.voteCount - a.voteCount
+    );
 
     res.json({
       influenceurs: sortedResults,
       totalVotes,
-      isSpecialCategory
+      isSpecialCategory,
     });
   } catch (error) {
     console.error("Erreur récupération résultats:", error);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
-
-
-
-
 
 // Routes pour les catégories
 app.get("/api/categories", async (req, res) => {
@@ -688,7 +691,7 @@ app.delete("/api/influenceurs/:id", async (req, res) => {
  * @throws {500} - Erreur serveur lors de la création de l'influenceur
  */
 app.post("/api/influenceurs", async (req, res) => {
-  const { name, imageUrl, categoryId } = req.body;
+  let { name, imageUrl, categoryId } = req.body;
 
   if (!name || !imageUrl || !categoryId) {
     return res
@@ -697,6 +700,9 @@ app.post("/api/influenceurs", async (req, res) => {
   }
 
   try {
+    // Nettoyage du nom: suppression des espaces et conversion en minuscules
+    const cleanedName = name.trim().toLowerCase();
+
     // 1. Vérifiez que la catégorie existe
     const categoryExists = await prisma.category.findUnique({
       where: { id: categoryId },
@@ -706,28 +712,49 @@ app.post("/api/influenceurs", async (req, res) => {
       return res.status(404).json({ error: "Catégorie non trouvée" });
     }
 
-    // 2. Créez l'influenceur sans inclure les votes initialement
-    const newInfluenceur = await prisma.influenceurs.create({
-      data: {
-        name,
-        imageUrl,
-        categoryId,
+    // 2. Vérifiez si un influenceur avec le même nom (insensible à la casse) existe déjà
+    const existingInfluenceur = await prisma.influenceurs.findFirst({
+      where: {
+        name: {
+          equals: cleanedName,
+          mode: 'insensitive' // Prisma permet une comparaison insensible à la casse
+        }
       },
     });
 
-    // 3. Formatez la réponse avec voteCount à 0 par défaut
+    // Alternative si la version de Prisma ne supporte pas 'mode: insensitive'
+    // const allInfluenceurs = await prisma.influenceurs.findMany();
+    // const existingInfluenceur = allInfluenceurs.find(inf => 
+    //   inf.name.trim().toLowerCase() === cleanedName
+    // );
+
+    // 3. Déterminez la valeur de isMain
+    const isMain = !existingInfluenceur;
+
+    // 4. Créez le nouvel influenceur avec le nom original (non modifié)
+    const newInfluenceur = await prisma.influenceurs.create({
+      data: {
+        name: name.trim(), // On garde le nom original mais sans espaces aux extrémités
+        imageUrl,
+        categoryId,
+        isMain,
+      },
+    });
+
+    // 5. Formatez la réponse
     const responseData = {
       ...newInfluenceur,
-      voteCount: 0, // Initialisation explicite à 0
+      voteCount: 0,
     };
 
     res.status(201).json(responseData);
     io.emit("influenceursUpdate", { newInfluenceur: responseData });
   } catch (error) {
     console.error("Erreur création influenceur:", error);
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la création de l'influenceur" });
+    res.status(500).json({ 
+      error: "Erreur lors de la création de l'influenceur",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
