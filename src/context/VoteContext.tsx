@@ -522,29 +522,22 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const generateEnhancedFingerprint = async (): Promise<string> => {
-  const fingerprintData = {
-    userAgent: navigator.userAgent,
-    screenResolution: `${window.screen.width}x${window.screen.height}`,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    colorDepth: window.screen.colorDepth,
-    languages: navigator.languages.join(','),
-    hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+    const fingerprintData = {
+      userAgent: navigator.userAgent,
+      screenResolution: `${window.screen.width}x${window.screen.height}`,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      colorDepth: window.screen.colorDepth,
+      languages: navigator.languages.join(','),
+      hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+    };
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(fingerprintData));
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
-  const encoder = new TextEncoder();
-  const data = encoder.encode(JSON.stringify(fingerprintData));
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
-// const getCanvasFingerprint = async (): Promise<string> => {
-//   const canvas = document.createElement('canvas');
-//   const ctx = canvas.getContext('2d');
-//   ctx.textBaseline = 'top';
-//   ctx.fillText('Hello, Fingerprint', 2, 2);
-//   return canvas.toDataURL().slice(-20); // Extraire une partie distinctive
-// };
 
   /**
  * Fonction pour vérifier si un numéro peut voter (n'a pas déjà voté)
