@@ -123,15 +123,13 @@ io.on("connection", (socket) => {
           include: { category: true },
         });
 
-        const fingerPrintWithPhone = otp+phoneNumber;
-
         // Date du jour à minuit
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const existingVotes = await prisma.votes.findMany({
           where: {
-            otp: fingerPrintWithPhone,
+            otp: otp,
             timestamp: { gte: today },
             influenceurs: {
               categoryId: influenceurWithCat.categoryId,
@@ -169,9 +167,14 @@ io.on("connection", (socket) => {
             console.log(
               "Le vote nest pas special et il a deja voté a aujoud'hui dans spécial: on lui envoie un message dans le formulaire"
             );
-            socket.emit("voteError", "Vous avez déjà épuisé tous vos votes. Revenez demain");
+            socket.emit(
+              "voteError",
+              "Vous avez déjà épuisé tous vos votes. Revenez demain"
+            );
           } else {
-            console.log("le vote nest pas pas special. Il a deja voté dans cette cat: ");
+            console.log(
+              "le vote nest pas pas special. Il a deja voté dans cette cat: "
+            );
             socket.emit(
               "voteError",
               "Vous avez déjà effectué un vote dans cette catégorie Aujourd'hui. Revenez demain"
@@ -191,7 +194,7 @@ io.on("connection", (socket) => {
             phoneNumber, // Stocké mais non utilisé pour la validation
             isSpecial: isSpecialVote,
             isValidated: true,
-            otp: fingerPrintWithPhone,
+            otp: otp,
             otpExpiresAt: new Date(),
           },
         });
