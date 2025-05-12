@@ -6,16 +6,19 @@ interface SecondVoteOfferProps {
   onAccept: () => void;
   onDecline: () => void;
   influenceur: Influenceur;
-  isSpecialCategory?: boolean; // Ajoutez cette prop
+  isSpecialCategory?: boolean;
+  error?: string | null; // Ajout de la prop error
+  hasVoted?: boolean; // Nouvelle prop pour indiquer si l'utilisateur a déjà voté
 }
 
 const SecondVoteOffer: React.FC<SecondVoteOfferProps> = ({
   onAccept,
   onDecline,
   influenceur,
-  isSpecialCategory
+  isSpecialCategory,
+  error,
+  hasVoted
 }) => {
-
 
   const handleAccept = () => {
     console.log("Accepting special vote");
@@ -27,17 +30,16 @@ const SecondVoteOffer: React.FC<SecondVoteOfferProps> = ({
     onDecline();
   };
 
-useEffect(() => {
+  useEffect(() => {
     console.log("SecondVoteOffer mounted");
     return () => console.log("SecondVoteOffer unmounted");
   }, []);
-
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100] p-4 animate-fadeIn">
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden transform transition-all duration-300 scale-100 animate-slideIn"
-        onClick={(e) => e.stopPropagation()} // Empêche la fermeture quand on clique à l'intérieur
+        onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête avec le nom de l'influenceur */}
         <div className="flex justify-between items-center p-5 bg-black text-yellow-500">
@@ -71,6 +73,20 @@ useEffect(() => {
               Vous avez déjà voté dans une catégorie normale. Souhaitez-vous utiliser
               votre vote spécial pour {influenceur.name} dans la catégorie "Influenceur2lannee"?
             </p>
+            
+            {/* Affichage des erreurs */}
+            {error && (
+              <p className="mt-2 text-sm text-green-600 animate-pulse">
+                {error}
+              </p>
+            )}
+            
+            {/* Message de confirmation si déjà voté */}
+            {hasVoted && (
+              <p className="mt-2 text-sm text-green-600 font-medium">
+                Vous avez déjà utilisé votre vote spécial aujourd'hui. Revenez demain !
+              </p>
+            )}
           </div>
 
           {/* Boutons avec envoi au backend */}
@@ -80,10 +96,16 @@ useEffect(() => {
             >
               Annuler
             </button>
-            <button onClick={handleAccept}
-              className="px-6 py-2 bg-black text-yellow-500 rounded-md hover:bg-yellow-500 hover:text-black transition-colors duration-300"
+            <button 
+              onClick={handleAccept}
+              disabled={hasVoted}
+              className={`px-6 py-2 rounded-md transition-colors duration-300 ${
+                hasVoted 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-black text-yellow-500 hover:bg-yellow-500 hover:text-black'
+              }`}
             >
-              Confirmer mon vote spécial
+              {hasVoted ? 'Déjà voté' : 'Confirmer mon vote spécial'}
             </button>
           </div>
         </div>

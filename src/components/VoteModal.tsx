@@ -123,6 +123,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
           onDecline={handleDeclineSpecialVote}
           influenceur={selectedInfluenceur}
           isSpecialCategory={isSpecialCategory}
+          error={error} // Passez l'erreur depuis le contexte
         />
       </>
     );
