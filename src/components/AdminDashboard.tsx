@@ -18,6 +18,14 @@ const StatCard = React.memo(({
   color: string;
   subValue?: string;
 }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+  
+  useEffect(() => {
+    if (typeof value === 'number') {
+      setDisplayValue(value);
+    }
+  }, [value]);
+
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
@@ -30,13 +38,18 @@ const StatCard = React.memo(({
     <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-lg p-4`}>
       <p className="text-sm font-medium">{title}</p>
       <p className="text-2xl font-bold">
-        {typeof value === 'number' ? <CountUp end={value} duration={1.5} /> : value}
+        {typeof value === 'number' ? 
+          <CountUp 
+            start={displayValue}
+            end={value} 
+            duration={1.5} 
+            separator=","
+          /> : value}
       </p>
       {subValue && <p className="text-xs opacity-75">{subValue}</p>}
     </div>
   );
 });
-
 
 
 /**
@@ -115,19 +128,20 @@ const AdminDashboard: React.FC = () => {
       }
     });
 
-    // Calcul des votes du jour (simplifié - à adapter selon votre modèle de données)
+    // Calcul des votes du jour
     const today = new Date().toISOString().split('T')[0];
     const todayVotes = votes.filter(vote => {
       const voteDate = new Date(vote.timestamp || 0).toISOString().split('T')[0];
       return voteDate === today;
     }).length;
 
-    setCategoryStats({
+    // Utilisez les valeurs précédentes pour l'incrémentation
+    setCategoryStats(prev => ({
       totalByCategory: votesByCategory,
       specialCategoryTotal,
       mostPopularCategory: mostPopular,
-      todayVotes
-    });
+      todayVotes: todayVotes // Ici, vous pourriez aussi faire prev.todayVotes + newVotes si vous voulez incrémenter
+    }));
   }, [categories, influenceurs, votes]);
 
   useEffect(() => {
@@ -141,12 +155,12 @@ const AdminDashboard: React.FC = () => {
     return total + (Number(influenceur.voteCount) || 0);
   }, 0);
 
-  setStats({
+  setStats(prev => ({
     totalInfluenceurs: mainInfluenceurs.length,
-    totalVotes,
+    totalVotes: totalVotes, // Ici, vous pourriez faire prev.totalVotes + newVotes si vous voulez incrémenter
     totalVoteRecords: votes.length,
     lastUpdated: new Date()
-  });
+  }));
 }, [influenceurs, votes]);
 
   // Fonction pour uploader une image
