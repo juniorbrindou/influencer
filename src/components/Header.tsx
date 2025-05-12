@@ -21,14 +21,18 @@ const Header: React.FC = () => {
         </Link>
 
         <nav className="flex items-center space-x-6">
-          <Link
+          <div className="flex items-center space-x-1 text-gray-400 cursor-not-allowed" title="Disponible la semaine prochaine">
+            <BarChart2 className="h-5 w-5" />
+            <span>Résultats (bientôt disponible)</span>
+          </div>
+          {/* <Link
             to="/results"
             className={`flex items-center space-x-1 text-white hover:text-yellow-500 transition-colors ${location.pathname === '/results' ? 'text-yellow-500 font-medium' : ''
               }`}
           >
             <BarChart2 className="h-5 w-5" />
             <span>Résultats</span>
-          </Link>
+          </Link> */}
 
           <Link
             to="/admin"
