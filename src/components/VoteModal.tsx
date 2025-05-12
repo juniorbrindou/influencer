@@ -149,7 +149,15 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
             </button>
           </div>
 
+
+
+
+
           <div className="p-6">
+
+
+
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -159,7 +167,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
-                    className="px-2 py-2 border rounded-md"
+                    className="px-2 py-2 border rounded-md w-auto sm:w-1/4" // Réduit la largeur du select
                   >
                     {countryCodes.map((country) => (
                       <option key={country.code} value={country.code}>
@@ -174,7 +182,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
                     placeholder="00 00 00 00 00"
                     minLength={8}
                     maxLength={10}
-                    className="w-full px-4 py-2 border rounded-md"
+                    className="w-full px-4 py-2 border rounded-md sm:w-3/4" // Augmente la largeur de l'input
                     required
                   />
                 </div>
@@ -183,12 +191,17 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
 
               <button
                 type="submit"
-                // disabled={isSubmitting}
                 className={`w-full py-2 bg-black text-yellow-500 rounded-md transition-all duration-300 ${isSubmitting || isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-black'}`}
               >
                 {isSubmitting ? 'Enregistrement...' : 'Confirmer mon vote'}
               </button>
             </form>
+
+
+
+
+
+
           </div>
         </div>
       </div>
