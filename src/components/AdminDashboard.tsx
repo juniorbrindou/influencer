@@ -7,19 +7,32 @@ import { ExclamationTriangleIcon } from '@heroicons/react/16/solid';
 import CountUp from 'react-countup';
 
 // Composant pour afficher une carte de statistique avec animation
-const StatCard = React.memo(({ title, value, color }: { title: string; value: number; color: string }) => {
+const StatCard = React.memo(({
+  title,
+  value,
+  color,
+  subValue
+}: {
+  title: string;
+  value: number | string;
+  color: string;
+  subValue?: string;
+}) => {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
     purple: 'bg-purple-50 text-purple-600',
+    yellow: 'bg-yellow-50 text-yellow-600',
+    indigo: 'bg-indigo-50 text-indigo-600'
   };
 
   return (
     <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-lg p-4`}>
       <p className="text-sm font-medium">{title}</p>
       <p className="text-2xl font-bold">
-        <CountUp end={value} duration={1.5} />
+        {typeof value === 'number' ? <CountUp end={value} duration={1.5} /> : value}
       </p>
+      {subValue && <p className="text-xs opacity-75">{subValue}</p>}
     </div>
   );
 });
@@ -50,6 +63,14 @@ const AdminDashboard: React.FC = () => {
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
 
+  const [categoryStats, setCategoryStats] = useState({
+    totalByCategory: {} as Record<string, number>,
+    specialCategoryTotal: 0,
+    mostPopularCategory: { name: '', votes: 0 },
+    todayVotes: 0
+  });
+
+
   // États pour les statistiques
   const [stats, setStats] = useState({
     totalInfluenceurs: 0,
@@ -64,21 +85,69 @@ const AdminDashboard: React.FC = () => {
   // Déterminer si le bouton d'ajout doit être affiché
   const showAddInfluenceurButton = selectedCategory && selectedCategory !== specialCategory?.id;
 
+  // Ajoutez cette fonction dans le composant
+  const calculateStats = useCallback(() => {
+    // Calcul des votes par catégorie
+    const votesByCategory: Record<string, number> = {};
+
+    categories.forEach(category => {
+      const categoryVotes = influenceurs
+        .filter(inf => inf.categoryId === category.id)
+        .reduce((sum, inf) => sum + (inf.voteCount || 0), 0);
+
+      votesByCategory[category.id] = categoryVotes;
+    });
+
+    // Trouver la catégorie spéciale et son total
+    const specialCat = categories.find(c => c.name === "INFLUENCEUR2LANNEE");
+    const specialCategoryTotal = specialCat ? votesByCategory[specialCat.id] || 0 : 0;
+
+    // Trouver la catégorie la plus populaire (hors spéciale)
+    const nonSpecialCategories = categories.filter(c => c.name !== "INFLUENCEUR2LANNEE");
+    let mostPopular = { name: '', votes: 0 };
+
+    nonSpecialCategories.forEach(category => {
+      if (votesByCategory[category.id] > mostPopular.votes) {
+        mostPopular = {
+          name: category.name,
+          votes: votesByCategory[category.id]
+        };
+      }
+    });
+
+    // Calcul des votes du jour (simplifié - à adapter selon votre modèle de données)
+    const today = new Date().toISOString().split('T')[0];
+    const todayVotes = votes.filter(vote => {
+      const voteDate = new Date(vote.timestamp || 0).toISOString().split('T')[0];
+      return voteDate === today;
+    }).length;
+
+    setCategoryStats({
+      totalByCategory: votesByCategory,
+      specialCategoryTotal,
+      mostPopularCategory: mostPopular,
+      todayVotes
+    });
+  }, [categories, influenceurs, votes]);
+
+  useEffect(() => {
+    calculateStats();
+  }, [calculateStats]);
 
   // Calcul des statistiques
   useEffect(() => {
-    const totalVotes = influenceurs.reduce((total, influenceur) => {
-      return total + (Number(influenceur.voteCount) || 0);
-    }, 0);
+  const mainInfluenceurs = influenceurs.filter(inf => inf.isMain);
+  const totalVotes = mainInfluenceurs.reduce((total, influenceur) => {
+    return total + (Number(influenceur.voteCount) || 0);
+  }, 0);
 
-    setStats({
-      totalInfluenceurs: influenceurs.length,
-      totalVotes,
-      totalVoteRecords: votes.length,
-      lastUpdated: new Date()
-    });
-  }, [influenceurs, votes]);
-
+  setStats({
+    totalInfluenceurs: mainInfluenceurs.length,
+    totalVotes,
+    totalVoteRecords: votes.length,
+    lastUpdated: new Date()
+  });
+}, [influenceurs, votes]);
 
   // Fonction pour uploader une image
   const uploadImage = useCallback(async (file: File): Promise<string> => {
@@ -260,7 +329,21 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard title="Total des influenceurs" value={stats.totalInfluenceurs} color="blue" />
           <StatCard title="Total des votes" value={stats.totalVotes} color="green" />
-          {/* <StatCard title="Nb. Votes Enregistrés" value={stats.totalVoteRecords} color="purple" /> */}
+          <StatCard title="Votes aujourd'hui" value={categoryStats.todayVotes} color="purple" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <StatCard
+            title="Votes spéciaux"
+            value={categoryStats.specialCategoryTotal}
+            color="yellow"
+          />
+          <StatCard
+            title="Catégorie la plus populaire"
+            value={categoryStats.mostPopularCategory.name || 0}
+            subValue={`${categoryStats.mostPopularCategory.votes} votes`}
+            color="indigo"
+          />
         </div>
 
         <div className="mt-2 text-xs text-gray-500 text-right">
