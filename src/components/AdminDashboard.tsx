@@ -641,11 +641,15 @@ const AdminDashboard: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {influenceurs
                 .filter(influenceur => {
-                  if (!selectedCategory) return false; // Ne rien afficher quand "Toutes les catégories" est sélectionné
-                  if (selectedCategory === specialCategory?.id) {
-                    return influenceur.isMain; // Seulement les influenceurs principaux pour la catégorie spéciale
+                  if (!selectedCategory) return true;
+                  if (selectedCategory === specialCategory?.id) return influenceur.isMain;
+                  return influenceur.categoryId === selectedCategory;
+                })
+                .sort((a, b) => {
+                  if (!selectedCategory) {
+                    return (b.voteCount || 0) - (a.voteCount || 0);
                   }
-                  return influenceur.categoryId === selectedCategory; // Filtre normal pour les autres catégories
+                  return 0;
                 })
                 .map((influenceur, index) => {
                   const category = categories.find(cat => cat.id === influenceur.categoryId);
@@ -653,7 +657,8 @@ const AdminDashboard: React.FC = () => {
                     <tr key={influenceur.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="w-6 h-6 flex items-center justify-center bg-[#6C63FF] text-white text-xs font-bold rounded-full">
-                          {index + 1}
+                          {/* Afficher le rang basé sur le tri quand "Toutes les catégories" est sélectionné */}
+                          {!selectedCategory ? index + 1 : index + 1}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -730,13 +735,13 @@ const AdminDashboard: React.FC = () => {
                 })}
               {/* Ligne affichée si la liste des influenceurs est vide */}
               {influenceurs.filter(influenceur => {
-                if (!selectedCategory) return false;
+                if (!selectedCategory) return true;
                 if (selectedCategory === specialCategory?.id) return influenceur.isMain;
                 return influenceur.categoryId === selectedCategory;
               }).length === 0 && !isAddingInfluenceur && (
                   <tr>
                     <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                      {!selectedCategory ? "Sélectionnez une catégorie spécifique pour voir les influenceurs" :
+                      {!selectedCategory ? "Aucun influenceur trouvé" :
                         selectedCategory === specialCategory?.id ? "Aucun influenceur principal dans cette catégorie" :
                           "Aucun influenceur dans cette catégorie"}
                     </td>

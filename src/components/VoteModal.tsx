@@ -24,7 +24,7 @@ export interface VoteContextType {
   setCountryCode: (code: string) => void;
   error: string | null;
   setError: (error: string | null) => void; // Added setError
-  isLoading: boolean;
+  // isLoading: boolean;
 }
 
 const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
@@ -182,7 +182,7 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
 
               <button
                 type="submit"
-                disabled={isSubmitting || isLoading}
+                // disabled={isSubmitting}
                 className={`w-full py-2 bg-black text-yellow-500 rounded-md transition-all duration-300 ${isSubmitting || isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-black'}`}
               >
                 {isSubmitting ? 'Enregistrement...' : 'Confirmer mon vote'}

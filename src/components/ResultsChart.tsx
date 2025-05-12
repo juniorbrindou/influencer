@@ -21,24 +21,24 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
         if (isMounted) {
           prevResultsRef.current = results;
           setResults(data);
-          
+
           // Initialize displayed percentages
           const initialPercentages: Record<string, number> = {};
           data.influenceurs.forEach(infl => {
-            const percentage = data.totalVotes > 0 
-              ? (infl.voteCount / data.totalVotes) * 100 
+            const percentage = data.totalVotes > 0
+              ? (infl.voteCount / data.totalVotes) * 100
               : 0;
             initialPercentages[infl.id] = 0;
           });
           setDisplayedPercentages(initialPercentages);
-          
+
           // Animate to actual percentages
           setTimeout(() => {
             if (isMounted) {
               const targetPercentages: Record<string, number> = {};
               data.influenceurs.forEach(infl => {
-                const percentage = data.totalVotes > 0 
-                  ? (infl.voteCount / data.totalVotes) * 100 
+                const percentage = data.totalVotes > 0
+                  ? (infl.voteCount / data.totalVotes) * 100
                   : 0;
                 targetPercentages[infl.id] = percentage;
               });
@@ -65,8 +65,8 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
     // When results change (e.g., via WebSocket), animate to new percentages
     const targetPercentages: Record<string, number> = {};
     results.influenceurs.forEach(infl => {
-      const percentage = results.totalVotes > 0 
-        ? (infl.voteCount / results.totalVotes) * 100 
+      const percentage = results.totalVotes > 0
+        ? (infl.voteCount / results.totalVotes) * 100
         : 0;
       targetPercentages[infl.id] = percentage;
     });
@@ -101,6 +101,14 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
     );
   }
 
+  // Trier les influenceurs par nombre de votes décroissant et ajouter un rang
+  const rankedInfluenceurs = [...results.influenceurs]
+    .sort((a, b) => b.voteCount - a.voteCount)
+    .map((influenceur, index) => ({
+      ...influenceur,
+      rank: index + 1
+    }));
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">
@@ -108,7 +116,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
       </h2>
 
       <div className="space-y-6">
-        {results.influenceurs.map((influenceur) => {
+        {rankedInfluenceurs.map((influenceur) => {
           const targetPercentage = results.totalVotes > 0
             ? (influenceur.voteCount / results.totalVotes) * 100
             : 0;
@@ -119,12 +127,17 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
             <div key={influenceur.id} className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <div className="h-10 w-10 rounded-full overflow-hidden">
-                    <img
-                      src={influenceur.imageUrl}
-                      alt={influenceur.name}
-                      className="h-full w-full object-cover"
-                    />
+                  <div className="flex items-center">
+                    <span className="w-6 text-center font-bold text-gray-700">
+                      {influenceur.rank}
+                    </span>
+                    <div className="h-10 w-10 rounded-full overflow-hidden ml-2">
+                      <img
+                        src={influenceur.imageUrl}
+                        alt={influenceur.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   </div>
                   <span className="font-medium">{influenceur.name}</span>
                 </div>
