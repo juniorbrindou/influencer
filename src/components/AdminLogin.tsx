@@ -149,13 +149,6 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
           </button>
         </form>
 
-        {/* Section optionnelle pour afficher les identifiants de démo */}
-        {/* ATTENTION: À supprimer dans une application de production */}
-        <div className="mt-6 text-center border-t pt-4"> {/* Séparateur visuel */}
-          <p className="text-xs text-gray-500"> {/* Texte plus petit */}
-            (Démo) Identifiants : <code className="bg-gray-100 px-1 py-0.5 rounded">admin</code> / <code className="bg-gray-100 px-1 py-0.5 rounded">password123</code>
-          </p>
-        </div>
       </div>
     </div>
   );
