@@ -511,20 +511,20 @@ const AdminDashboard: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <button
+                    {/* <button
                       onClick={() => handleEditCategory(category)}
                       className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-100 transition-colors"
                       title="Modifier"
                     >
                       <Edit className="h-4 w-4" />
-                    </button>
-                    <button
+                    </button> */}
+                    {/* <button
                       onClick={() => handleDeleteCategory(category.id)}
                       className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 transition-colors"
                       title="Supprimer"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </button> */}
                   </>
                 )}
               </div>
@@ -798,7 +798,7 @@ const AdminDashboard: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <button
+                            {/* <button
                               onClick={() => handleEditInfluenceur(influenceur)}
                               className="text-indigo-600 hover:text-indigo-900 mr-3"
                             >
@@ -809,7 +809,7 @@ const AdminDashboard: React.FC = () => {
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-5 w-5 inline" />
-                            </button>
+                            </button> */}
                           </>
                         )}
                       </td>
