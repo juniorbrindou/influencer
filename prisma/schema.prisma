@@ -1,12 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  seed = "node prisma/seed.js"
+  seed     = "node prisma/seed.js"
 }
 
 datasource db {
@@ -15,39 +9,38 @@ datasource db {
 }
 
 model Category {
-  id          String        @id @default(uuid())
-  name        String        @unique
-  description String?
-  imageUrl    String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           String         @id @default(uuid())
+  name         String         @unique
+  description  String?
+  imageUrl     String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   influenceurs Influenceurs[]
 }
 
-
 model Influenceurs {
-  id        String   @id @default(uuid())
-  name      String
-  imageUrl  String
-  categoryId  String?
-  category    Category?  @relation(fields: [categoryId], references: [id])
-  votesedAt DateTime @default(now())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  votes     Votes[]
-  isMain    Boolean  @default(false)
+  id         String    @id @default(uuid())
+  name       String
+  imageUrl   String
+  votesedAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  categoryId String?
+  createdAt  DateTime  @default(now())
+  isMain     Boolean?  @default(false)
+  category   Category? @relation(fields: [categoryId], references: [id])
+  votes      Votes[]
 }
 
 model Votes {
-  id            String       @id @default(uuid())
+  id            String        @id @default(uuid())
   influenceurId String?
   phoneNumber   String
   otp           String
-  otpExpiresAt DateTime
-  isValidated     Boolean      @default(false)
-  timestamp     DateTime     @default(now())
+  otpExpiresAt  DateTime
+  isValidated   Boolean       @default(false)
+  timestamp     DateTime      @default(now())
+  isSpecial     Boolean?      @default(false)
   influenceurs  Influenceurs? @relation(fields: [influenceurId], references: [id])
-  isSpecial Boolean @default(false)
 }
 
 model Users {
