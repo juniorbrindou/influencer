@@ -4,7 +4,7 @@ import { ClassementData } from '../types';
 
 interface ResultsChartProps {
   categoryId: string;
-  categoryName?: string; // Ajout de la prop categoryName
+  categoryName?: string;
 }
 
 const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName }) => {
@@ -13,8 +13,14 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
   const [displayedPercentages, setDisplayedPercentages] = useState<Record<string, number>>({});
   const prevResultsRef = useRef<ClassementData | null>(null);
 
-  // Détermine si c'est la catégorie spéciale
-  const isLuxuryMode = categoryName === "INFLUENCEUR2LANNEE";
+  // Détermine le niveau de style en fonction de la catégorie
+  const getStyleLevel = () => {
+    if (categoryName === "INFLUENCEUR2LANNEE") return 3; // Niveau maximum
+    if (categoryName?.includes("SPECIAL") || categoryName?.includes("PREMIUM")) return 2;
+    return 1; // Niveau de base
+  };
+
+  const styleLevel = getStyleLevel();
 
   useEffect(() => {
     let isMounted = true;
@@ -26,7 +32,6 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
           prevResultsRef.current = results;
           setResults(data);
 
-          // Initialize displayed percentages
           const initialPercentages: Record<string, number> = {};
           data.influenceurs.forEach(infl => {
             const percentage = data.totalVotes > 0
@@ -36,7 +41,6 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
           });
           setDisplayedPercentages(initialPercentages);
 
-          // Animate to actual percentages
           setTimeout(() => {
             if (isMounted) {
               const targetPercentages: Record<string, number> = {};
@@ -62,11 +66,9 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
     };
   }, [categoryId, fetchResults]);
 
-  // Handle WebSocket updates
   useEffect(() => {
     if (!results) return;
 
-    // When results change (e.g., via WebSocket), animate to new percentages
     const targetPercentages: Record<string, number> = {};
     results.influenceurs.forEach(infl => {
       const percentage = results.totalVotes > 0
@@ -75,7 +77,6 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
       targetPercentages[infl.id] = percentage;
     });
 
-    // Only animate if the percentages actually changed
     let shouldAnimate = false;
     for (const [id, percentage] of Object.entries(targetPercentages)) {
       if (Math.abs(displayedPercentages[id] - percentage) > 0.1) {
@@ -91,7 +92,11 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
 
   if (!results) {
     return (
-      <div className={`rounded-lg shadow-md p-6 text-center ${isLuxuryMode ? 'bg-gradient-to-br from-purple-900 to-indigo-800 text-white' : 'bg-white text-gray-600'}`}>
+      <div className={`rounded-lg shadow-md p-6 text-center ${
+        styleLevel === 3 ? 'bg-gradient-to-br from-purple-900 to-indigo-800 text-white' :
+        styleLevel === 2 ? 'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-800' :
+        'bg-white text-gray-600'
+      }`}>
         <p>Chargement des résultats...</p>
       </div>
     );
@@ -99,13 +104,16 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
 
   if (results.influenceurs.length === 0) {
     return (
-      <div className={`rounded-lg shadow-md p-6 text-center ${isLuxuryMode ? 'bg-gradient-to-br from-purple-900 to-indigo-800 text-white' : 'bg-white text-gray-600'}`}>
+      <div className={`rounded-lg shadow-md p-6 text-center ${
+        styleLevel === 3 ? 'bg-gradient-to-br from-purple-900 to-indigo-800 text-white' :
+        styleLevel === 2 ? 'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-800' :
+        'bg-white text-gray-600'
+      }`}>
         <p>Aucun influenceur dans cette catégorie pour le moment.</p>
       </div>
     );
   }
 
-  // Trier les influenceurs par nombre de votes décroissant et ajouter un rang
   const rankedInfluenceurs = [...results.influenceurs]
     .sort((a, b) => b.voteCount - a.voteCount)
     .map((influenceur, index) => ({
@@ -114,17 +122,26 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
     }));
 
   return (
-    <div className={`rounded-lg shadow-xl p-6 ${isLuxuryMode ? 
-      'bg-gradient-to-br from-purple-900 to-indigo-800 text-white border-2 border-gold-500' : 
-      'bg-white text-gray-800'}`}
-    >
-      <h2 className={`text-xl font-semibold mb-6 ${isLuxuryMode ? 
-        'text-white text-2xl font-bold text-center mb-8' : 
-        'text-gray-800'}`}
-      >
-        {results.isSpecialCategory ? "Résultats des votes spéciaux" : "Résultats des votes"}
-        {isLuxuryMode && (
+    <div className={`rounded-lg p-6 ${
+      styleLevel === 3 ? 
+        'bg-gradient-to-br from-purple-900 to-indigo-800 text-white shadow-xl border-2 border-yellow-400' :
+      styleLevel === 2 ? 
+        'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-800 shadow-lg border border-indigo-200' :
+        'bg-white text-gray-800 shadow-md'
+    }`}>
+      <h2 className={`${
+        styleLevel === 3 ? 
+          'text-2xl font-bold text-center mb-8 text-white' :
+        styleLevel === 2 ? 
+          'text-xl font-semibold mb-6 text-indigo-800 text-center' :
+          'text-xl font-semibold mb-6 text-gray-800'
+      }`}>
+        {results.isSpecialCategory ? "INFLUENCEUR DE LANNEE 2025" : "Résultats des votes"}
+        {styleLevel === 3 && (
           <div className="text-yellow-300 text-3xl mt-2 animate-pulse">★</div>
+        )}
+        {styleLevel === 2 && (
+          <div className="text-indigo-500 text-xl mt-2">✦</div>
         )}
       </h2>
 
@@ -137,20 +154,27 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
           const displayedPercentage = displayedPercentages[influenceur.id] || 0;
 
           return (
-            <div key={influenceur.id} className="space-y-2 group">
+            <div key={influenceur.id} className={`space-y-2 group ${
+              styleLevel >= 2 ? 'p-4 rounded-lg transition-all duration-300' : ''
+            } ${
+              styleLevel === 3 ? 'hover:bg-purple-800/30' :
+              styleLevel === 2 ? 'hover:bg-indigo-50' : ''
+            }`}>
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center">
-                    <span className={`w-6 text-center font-bold ${isLuxuryMode ? 
-                      'text-yellow-300 text-xl' : 
-                      'text-gray-700'}`}
-                    >
+                    <span className={`${
+                      styleLevel === 3 ? 'text-yellow-300 text-xl w-8' :
+                      styleLevel === 2 ? 'text-indigo-600 font-bold w-7' :
+                      'text-gray-700 w-6'
+                    } text-center font-bold`}>
                       {influenceur.rank}
                     </span>
-                    <div className={`h-10 w-10 rounded-full overflow-hidden ml-2 ${isLuxuryMode ? 
-                      'ring-2 ring-yellow-300 group-hover:ring-4 transition-all duration-300' : 
-                      ''}`}
-                    >
+                    <div className={`h-10 w-10 rounded-full overflow-hidden ml-2 ${
+                      styleLevel === 3 ? 'ring-2 ring-yellow-300 group-hover:ring-4' :
+                      styleLevel === 2 ? 'ring-1 ring-indigo-300 group-hover:ring-2' :
+                      ''
+                    } transition-all duration-300`}>
                       <img
                         src={influenceur.imageUrl}
                         alt={influenceur.name}
@@ -158,42 +182,50 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
                       />
                     </div>
                   </div>
-                  <span className={`font-medium ${isLuxuryMode ? 
-                    'text-white text-lg' : 
-                    ''}`}
-                  >
+                  <span className={`${
+                    styleLevel === 3 ? 'text-white text-lg' :
+                    styleLevel === 2 ? 'text-indigo-700 font-medium' :
+                    'font-medium'
+                  }`}>
                     {influenceur.name}
                   </span>
                 </div>
-                <span className={`font-semibold ${isLuxuryMode ? 
-                  'text-yellow-300 text-lg' : 
-                  'text-[#6C63FF]'}`}
-                >
+                <span className={`${
+                  styleLevel === 3 ? 'text-yellow-300 text-lg font-bold' :
+                  styleLevel === 2 ? 'text-indigo-600 font-semibold' :
+                  'text-[#6C63FF] font-semibold'
+                }`}>
                   {influenceur.voteCount} votes
                 </span>
               </div>
 
-              <div className={`h-6 rounded-full overflow-hidden ${isLuxuryMode ? 
-                'bg-opacity-20 bg-white' : 
-                'bg-gray-200'}`}
-              >
+              <div className={`h-4 rounded-full overflow-hidden ${
+                styleLevel === 3 ? 'bg-opacity-20 bg-white' :
+                styleLevel === 2 ? 'bg-indigo-100' :
+                'bg-gray-200'
+              }`}>
                 <div
-                  className={`h-full rounded-full transition-all duration-1000 ease-out ${isLuxuryMode ? 
-                    'bg-gradient-to-r from-yellow-400 to-yellow-500 shadow-lg' : 
-                    'bg-[#6C63FF]'}`}
+                  className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                    styleLevel === 3 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 shadow' :
+                    styleLevel === 2 ? 'bg-gradient-to-r from-indigo-400 to-purple-500' :
+                    'bg-[#6C63FF]'
+                  }`}
                   style={{
                     width: `${displayedPercentage}%`,
                   }}
                 ></div>
               </div>
 
-              <p className={`text-sm text-right ${isLuxuryMode ? 
-                'text-yellow-300 font-bold' : 
-                'text-gray-600'}`}
-              >
+              <p className={`${
+                styleLevel === 3 ? 'text-yellow-300 font-bold text-sm' :
+                styleLevel === 2 ? 'text-indigo-600 font-medium text-sm' :
+                'text-gray-600 text-sm'
+              } text-right`}>
                 {targetPercentage.toFixed(1)}%
-                {isLuxuryMode && (
-                  <span className="ml-2 text-xs opacity-70">du total</span>
+                {styleLevel >= 2 && (
+                  <span className={`ml-2 text-xs ${
+                    styleLevel === 3 ? 'opacity-70' : 'opacity-60'
+                  }`}>du total</span>
                 )}
               </p>
             </div>
