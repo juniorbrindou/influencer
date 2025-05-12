@@ -469,8 +469,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Générer un fingerprint client
         generateFingerprint().then(fingerprint => {
-          console.log('fingerprint pour le vote ', fingerprint);
-
           // Écouteurs temporaires pour gérer la réponse
           const handleSuccess = () => {
             cleanup();
@@ -511,34 +509,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
   };
-
-  // const submitVote = async (selectedInfluenceur: Influenceur, phoneNumber: string): Promise<void> => {
-  //   if (!selectedInfluenceur) {
-  //     setError("Sélectionnez un influenceur");
-  //     return;
-  //   }
-
-  //   try {
-  //     setIsLoading(true);
-  //     setError(null);
-
-  //     // Générer un fingerprint client
-  //     const fingerprint = await generateFingerprint();
-  //     console.log('fingerprint pour le vote ', fingerprint);
-
-  //     socket.emit("submitVote", {
-  //       influenceurId: selectedInfluenceur.id,
-  //       phoneNumber,
-  //       isSpecialVote: specialVote,
-  //       otp: fingerprint,
-  //     });
-
-  //   } catch (error) {
-  //     setIsLoading(false);
-  //     setError('Erreur lors du vote');
-  //     throw error;
-  //   }
-  // };
 
   // Fonction pour générer un fingerprint client
   const generateFingerprint = async (): Promise<string> => {

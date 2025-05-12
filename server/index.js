@@ -545,7 +545,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
     const formattedResults = influenceurs.map((inf) => {
       const voteCount = isSpecialCategory
         ? inf.votes.filter((v) => v.isSpecial).length
-        : inf.votes.length;
+        : inf.votes.filter((v) => !v.isSpecial).length;
 
       return {
         id: inf.id,
