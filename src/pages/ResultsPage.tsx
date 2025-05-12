@@ -72,7 +72,11 @@ const ResultsPage: React.FC = () => {
       ) : (
         selectedCategory && (
           <div className="max-w-3xl mx-auto">
-            <ResultsChart key={selectedCategory} categoryId={selectedCategory} />
+            <ResultsChart
+              key={selectedCategory}
+              categoryId={selectedCategory}
+              categoryName={categories.find(c => c.id === selectedCategory)?.name}
+            />
           </div>
         )
       )}

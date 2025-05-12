@@ -4,13 +4,17 @@ import { ClassementData } from '../types';
 
 interface ResultsChartProps {
   categoryId: string;
+  categoryName?: string; // Ajout de la prop categoryName
 }
 
-const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
+const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName }) => {
   const { fetchResults } = useVote();
   const [results, setResults] = useState<ClassementData | null>(null);
   const [displayedPercentages, setDisplayedPercentages] = useState<Record<string, number>>({});
   const prevResultsRef = useRef<ClassementData | null>(null);
+
+  // Détermine si c'est la catégorie spéciale
+  const isLuxuryMode = categoryName === "INFLUENCEUR2LANNEE";
 
   useEffect(() => {
     let isMounted = true;
@@ -87,16 +91,16 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
 
   if (!results) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 text-center">
-        <p className="text-gray-600">Chargement des résultats...</p>
+      <div className={`rounded-lg shadow-md p-6 text-center ${isLuxuryMode ? 'bg-gradient-to-br from-purple-900 to-indigo-800 text-white' : 'bg-white text-gray-600'}`}>
+        <p>Chargement des résultats...</p>
       </div>
     );
   }
 
   if (results.influenceurs.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 text-center">
-        <p className="text-gray-600">Aucun influenceur dans cette catégorie pour le moment.</p>
+      <div className={`rounded-lg shadow-md p-6 text-center ${isLuxuryMode ? 'bg-gradient-to-br from-purple-900 to-indigo-800 text-white' : 'bg-white text-gray-600'}`}>
+        <p>Aucun influenceur dans cette catégorie pour le moment.</p>
       </div>
     );
   }
@@ -110,9 +114,18 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
     }));
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">
+    <div className={`rounded-lg shadow-xl p-6 ${isLuxuryMode ? 
+      'bg-gradient-to-br from-purple-900 to-indigo-800 text-white border-2 border-gold-500' : 
+      'bg-white text-gray-800'}`}
+    >
+      <h2 className={`text-xl font-semibold mb-6 ${isLuxuryMode ? 
+        'text-white text-2xl font-bold text-center mb-8' : 
+        'text-gray-800'}`}
+      >
         {results.isSpecialCategory ? "Résultats des votes spéciaux" : "Résultats des votes"}
+        {isLuxuryMode && (
+          <div className="text-yellow-300 text-3xl mt-2 animate-pulse">★</div>
+        )}
       </h2>
 
       <div className="space-y-6">
@@ -124,14 +137,20 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
           const displayedPercentage = displayedPercentages[influenceur.id] || 0;
 
           return (
-            <div key={influenceur.id} className="space-y-2">
+            <div key={influenceur.id} className="space-y-2 group">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center">
-                    <span className="w-6 text-center font-bold text-gray-700">
+                    <span className={`w-6 text-center font-bold ${isLuxuryMode ? 
+                      'text-yellow-300 text-xl' : 
+                      'text-gray-700'}`}
+                    >
                       {influenceur.rank}
                     </span>
-                    <div className="h-10 w-10 rounded-full overflow-hidden ml-2">
+                    <div className={`h-10 w-10 rounded-full overflow-hidden ml-2 ${isLuxuryMode ? 
+                      'ring-2 ring-yellow-300 group-hover:ring-4 transition-all duration-300' : 
+                      ''}`}
+                    >
                       <img
                         src={influenceur.imageUrl}
                         alt={influenceur.name}
@@ -139,24 +158,43 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
                       />
                     </div>
                   </div>
-                  <span className="font-medium">{influenceur.name}</span>
+                  <span className={`font-medium ${isLuxuryMode ? 
+                    'text-white text-lg' : 
+                    ''}`}
+                  >
+                    {influenceur.name}
+                  </span>
                 </div>
-                <span className="font-semibold text-[#6C63FF]">
+                <span className={`font-semibold ${isLuxuryMode ? 
+                  'text-yellow-300 text-lg' : 
+                  'text-[#6C63FF]'}`}
+                >
                   {influenceur.voteCount} votes
                 </span>
               </div>
 
-              <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+              <div className={`h-6 rounded-full overflow-hidden ${isLuxuryMode ? 
+                'bg-opacity-20 bg-white' : 
+                'bg-gray-200'}`}
+              >
                 <div
-                  className="h-full bg-[#6C63FF] rounded-full transition-all duration-1000 ease-out"
+                  className={`h-full rounded-full transition-all duration-1000 ease-out ${isLuxuryMode ? 
+                    'bg-gradient-to-r from-yellow-400 to-yellow-500 shadow-lg' : 
+                    'bg-[#6C63FF]'}`}
                   style={{
                     width: `${displayedPercentage}%`,
                   }}
                 ></div>
               </div>
 
-              <p className="text-sm text-gray-600 text-right">
+              <p className={`text-sm text-right ${isLuxuryMode ? 
+                'text-yellow-300 font-bold' : 
+                'text-gray-600'}`}
+              >
                 {targetPercentage.toFixed(1)}%
+                {isLuxuryMode && (
+                  <span className="ml-2 text-xs opacity-70">du total</span>
+                )}
               </p>
             </div>
           );
