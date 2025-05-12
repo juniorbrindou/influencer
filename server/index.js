@@ -129,7 +129,7 @@ io.on("connection", (socket) => {
 
         const existingVotes = await prisma.votes.findMany({
           where: {
-            OR: [{ otp: otp }, { phoneNumber: phoneNumber }],
+            otp: otp,
             timestamp: { gte: today },
             influenceurs: {
               categoryId: influenceurWithCat.categoryId,
@@ -158,7 +158,7 @@ io.on("connection", (socket) => {
             );
             socket.emit(
               "voteError",
-              "Votez d'abord dans une catégorie normale"
+              "Revenez ici apres avoir votés vos differents candidats. Le dernier vote de la journée se fait ici"
             );
             return;
           }
@@ -167,12 +167,12 @@ io.on("connection", (socket) => {
             console.log(
               "Le vote nest pas special et il a deja voté a aujoud'hui dans spécial: on lui envoie un message dans le formulaire"
             );
-            socket.emit("voteError", "Vous avez déjà utilisé vos deux votes");
+            socket.emit("voteError", "Vous avez déjà épuisé tous vos votes. Revenez demain");
           } else {
             console.log("le vote nest pas pas special. Il a deja voté dans cette cat: ");
             socket.emit(
               "voteError",
-              "Vous avez déjà effectué un vote dans cette catégorie"
+              "Vous avez déjà effectué un vote dans cette catégorie Aujourd'hui. Revenez demain"
             );
 
             // console.log('pour renvoyer vers la modale de vote special');
