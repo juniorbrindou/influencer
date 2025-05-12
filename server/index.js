@@ -117,9 +117,25 @@ io.on("connection", (socket) => {
             otp
         );
 
-        // Vérifier s'il a deja voté
+        // Récupérer l'influenceur avec sa catégorie
+        const influenceurWithCat = await prisma.influenceurs.findUnique({
+          where: { id: influenceurId },
+          include: { category: true },
+        });
+
+        // Date du jour à minuit
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         const existingVotes = await prisma.votes.findMany({
-          where: { otp: otp },
+          where: {
+            OR: [{ otp: otp }, { phoneNumber: phoneNumber }],
+            timestamp: { gte: today },
+            influenceurs: {
+              categoryId: influenceurWithCat.categoryId,
+            },
+            isValidated: true,
+          },
           include: { influenceurs: { include: { category: true } } },
         });
 
@@ -132,7 +148,7 @@ io.on("connection", (socket) => {
             console.log("il a deja voté");
             socket.emit(
               "voteError",
-              "Vous avez déjà voté dans la catégorie spéciale"
+              "Vous avez déjà voté dans la catégorie spéciale aujourd'hui. Revenez demain"
             );
             return;
           }
@@ -149,14 +165,14 @@ io.on("connection", (socket) => {
         } else if (hasNormalVote) {
           if (hasSpecialVote) {
             console.log(
-              "Le vote nest pas special et il a deja voté: on lui envoie un message dans le formulaire"
+              "Le vote nest pas special et il a deja voté a aujoud'hui dans spécial: on lui envoie un message dans le formulaire"
             );
             socket.emit("voteError", "Vous avez déjà utilisé vos deux votes");
           } else {
-            console.log("le vote nest pas pas special. Il a deja voté: ");
+            console.log("le vote nest pas pas special. Il a deja voté dans cette cat: ");
             socket.emit(
               "voteError",
-              "Vous avez déjà effectué un vote depuis ce terminal"
+              "Vous avez déjà effectué un vote dans cette catégorie"
             );
 
             // console.log('pour renvoyer vers la modale de vote special');
@@ -717,14 +733,14 @@ app.post("/api/influenceurs", async (req, res) => {
       where: {
         name: {
           equals: cleanedName,
-          mode: 'insensitive' // Prisma permet une comparaison insensible à la casse
-        }
+          mode: "insensitive", // Prisma permet une comparaison insensible à la casse
+        },
       },
     });
 
     // Alternative si la version de Prisma ne supporte pas 'mode: insensitive'
     // const allInfluenceurs = await prisma.influenceurs.findMany();
-    // const existingInfluenceur = allInfluenceurs.find(inf => 
+    // const existingInfluenceur = allInfluenceurs.find(inf =>
     //   inf.name.trim().toLowerCase() === cleanedName
     // );
 
@@ -751,9 +767,10 @@ app.post("/api/influenceurs", async (req, res) => {
     io.emit("influenceursUpdate", { newInfluenceur: responseData });
   } catch (error) {
     console.error("Erreur création influenceur:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Erreur lors de la création de l'influenceur",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 });
