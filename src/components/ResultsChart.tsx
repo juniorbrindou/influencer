@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useVote } from '../context/useVote';
 import { ClassementData } from '../types';
 
@@ -9,37 +9,81 @@ interface ResultsChartProps {
 const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
   const { fetchResults } = useVote();
   const [results, setResults] = useState<ClassementData | null>(null);
-  const [animatedBars, setAnimatedBars] = useState(false);
+  const [displayedPercentages, setDisplayedPercentages] = useState<Record<string, number>>({});
+  const prevResultsRef = useRef<ClassementData | null>(null);
 
-  // Réinitialise et relance l'animation à chaque changement de catégorie
   useEffect(() => {
     let isMounted = true;
 
-    const loadDataAndAnimate = async () => {
+    const loadData = async () => {
       try {
-        // 1. Désactive l'animation pendant le chargement
-        if (isMounted) setAnimatedBars(false);
-
-        // 2. Charge les nouvelles données
         const data = await fetchResults(categoryId);
-        if (isMounted) setResults(data);
-
-        // 3. Attend un court instant avant de lancer l'animation
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        // 4. Active l'animation
-        if (isMounted) setAnimatedBars(true);
+        if (isMounted) {
+          prevResultsRef.current = results;
+          setResults(data);
+          
+          // Initialize displayed percentages
+          const initialPercentages: Record<string, number> = {};
+          data.influenceurs.forEach(infl => {
+            const percentage = data.totalVotes > 0 
+              ? (infl.voteCount / data.totalVotes) * 100 
+              : 0;
+            initialPercentages[infl.id] = 0;
+          });
+          setDisplayedPercentages(initialPercentages);
+          
+          // Animate to actual percentages
+          setTimeout(() => {
+            if (isMounted) {
+              const targetPercentages: Record<string, number> = {};
+              data.influenceurs.forEach(infl => {
+                const percentage = data.totalVotes > 0 
+                  ? (infl.voteCount / data.totalVotes) * 100 
+                  : 0;
+                targetPercentages[infl.id] = percentage;
+              });
+              setDisplayedPercentages(targetPercentages);
+            }
+          }, 50);
+        }
       } catch (error) {
         console.error("Failed to load results", error);
       }
     };
 
-    loadDataAndAnimate();
+    loadData();
 
     return () => {
       isMounted = false;
     };
   }, [categoryId, fetchResults]);
+
+  // Handle WebSocket updates
+  useEffect(() => {
+    if (!results) return;
+
+    // When results change (e.g., via WebSocket), animate to new percentages
+    const targetPercentages: Record<string, number> = {};
+    results.influenceurs.forEach(infl => {
+      const percentage = results.totalVotes > 0 
+        ? (infl.voteCount / results.totalVotes) * 100 
+        : 0;
+      targetPercentages[infl.id] = percentage;
+    });
+
+    // Only animate if the percentages actually changed
+    let shouldAnimate = false;
+    for (const [id, percentage] of Object.entries(targetPercentages)) {
+      if (Math.abs(displayedPercentages[id] - percentage) > 0.1) {
+        shouldAnimate = true;
+        break;
+      }
+    }
+
+    if (shouldAnimate) {
+      setDisplayedPercentages(targetPercentages);
+    }
+  }, [results]);
 
   if (!results) {
     return (
@@ -65,9 +109,11 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
 
       <div className="space-y-6">
         {results.influenceurs.map((influenceur) => {
-          const percentage = results.totalVotes > 0
+          const targetPercentage = results.totalVotes > 0
             ? (influenceur.voteCount / results.totalVotes) * 100
             : 0;
+
+          const displayedPercentage = displayedPercentages[influenceur.id] || 0;
 
           return (
             <div key={influenceur.id} className="space-y-2">
@@ -91,14 +137,13 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId }) => {
                 <div
                   className="h-full bg-[#6C63FF] rounded-full transition-all duration-1000 ease-out"
                   style={{
-                    width: animatedBars ? `${percentage}%` : '0%',
-                    transitionDelay: '100ms',
+                    width: `${displayedPercentage}%`,
                   }}
                 ></div>
               </div>
 
               <p className="text-sm text-gray-600 text-right">
-                {percentage.toFixed(1)}%
+                {targetPercentage.toFixed(1)}%
               </p>
             </div>
           );
