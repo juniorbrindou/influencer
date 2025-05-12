@@ -22,8 +22,7 @@ function App() {
               <Route path="/" element={<div className="foreground-content"><HomePage /></div>} />
               <Route path="/category/:id" element={<div className="foreground-content dark-bg-page"><CategoryPage /></div>} />
               <Route path="/confirmation" element={<div className="foreground-content"><ConfirmationPage /></div>} />
-              {/* Vous pouvez décommenter cette ligne quand les résultats seront disponibles */}
-              {/* <Route path="/results" element={<div className="foreground-content"><ResultsPage /></div>} /> */}
+              <Route path="/results" element={<div className="foreground-content"><ResultsPage /></div>} />
               <Route path="/admin" element={<div className="foreground-content"><AdminPage /></div>} />
               
               {/* Redirection pour l'ancienne route /results */}
