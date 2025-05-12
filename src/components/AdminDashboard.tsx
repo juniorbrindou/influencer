@@ -260,7 +260,7 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard title="Total des influenceurs" value={stats.totalInfluenceurs} color="blue" />
           <StatCard title="Total des votes" value={stats.totalVotes} color="green" />
-          <StatCard title="Nb. Votes Enregistrés" value={stats.totalVoteRecords} color="purple" />
+          {/* <StatCard title="Nb. Votes Enregistrés" value={stats.totalVoteRecords} color="purple" /> */}
         </div>
 
         <div className="mt-2 text-xs text-gray-500 text-right">

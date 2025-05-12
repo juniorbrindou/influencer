@@ -54,7 +54,7 @@ const socket = io(SOCKET_URL, {
 export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [influenceurs, setInfluenceurs] = useState<Influenceur[]>([]);
   const [votes, setVotes] = useState<Vote[]>(() => {
-    const stored = localStorage.getItem("votes");
+    const stored = 0
     return stored ? JSON.parse(stored) : [];
   });
   const [selectedInfluenceur, setSelectedInfluenceur] = useState<Influenceur | null>(null);
@@ -70,10 +70,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [offerSecondVote, setOfferSecondVote] = useState(false);
   const [specialVote, setSpecialVote] = useState(false);
 
-
-  useEffect(() => {
-    localStorage.setItem("votes", JSON.stringify(votes));
-  }, [votes]);
 
   // #section Configurer les écouteurs de socket.io
   useEffect(() => {
@@ -177,7 +173,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     socket.on("validateSuccess", (validatedVote) => {
       console.log("Vote validé avec succès:", validatedVote);
-      localStorage.setItem("votes", JSON.stringify(votes));
       setIsLoading(false);
       resetSelection();
     });

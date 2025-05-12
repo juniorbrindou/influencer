@@ -12,15 +12,6 @@ const ConfirmationPage: React.FC = () => {
     ? listInfluenceur.find(inf => inf.id === votes[votes.length - 1].influenceurId)
     : null;
 
-  useEffect(() => {
-    // Si aucun vote en mémoire, rediriger vers l'accueil
-    if (votes.length === 0) {
-      const savedVotes = localStorage.getItem("votes");
-      if (!savedVotes) {
-        navigate('/');
-      }
-    }
-  }, [votes, navigate]);
 
   return (
     <div className="container mx-auto px-4 py-16">
