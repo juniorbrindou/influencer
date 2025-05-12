@@ -33,12 +33,12 @@ const ConfirmationPage: React.FC = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 justify-center">
-          <Link
+          {/* <Link
             to="/results"
             className="px-6 py-2 bg-[#6C63FF] text-white rounded-md hover:bg-[#5A52D5] transition-colors"
           >
             Voir les résultats
-          </Link>
+          </Link> */}
 
           <Link
             to="/"

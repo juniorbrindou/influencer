@@ -123,13 +123,15 @@ io.on("connection", (socket) => {
           include: { category: true },
         });
 
+        const fingerPrintWithPhone = otp+phoneNumber;
+
         // Date du jour à minuit
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const existingVotes = await prisma.votes.findMany({
           where: {
-            otp: otp,
+            otp: fingerPrintWithPhone,
             timestamp: { gte: today },
             influenceurs: {
               categoryId: influenceurWithCat.categoryId,
@@ -189,7 +191,7 @@ io.on("connection", (socket) => {
             phoneNumber, // Stocké mais non utilisé pour la validation
             isSpecial: isSpecialVote,
             isValidated: true,
-            otp: otp,
+            otp: fingerPrintWithPhone,
             otpExpiresAt: new Date(),
           },
         });
