@@ -106,16 +106,6 @@ io.on("connection", (socket) => {
     async ({ influenceurId, phoneNumber, isSpecialVote, otp }) => {
       try {
         console.log("ce vote est speciel-------------: ", isSpecialVote);
-        console.log(
-          "Informations: influenceurId " +
-            influenceurId +
-            " phoneNumber " +
-            phoneNumber +
-            " isSpecialVote " +
-            isSpecialVote +
-            " otp " +
-            otp
-        );
 
         // Récupérer l'influenceur avec sa catégorie
         const influenceurWithCat = await prisma.influenceurs.findUnique({

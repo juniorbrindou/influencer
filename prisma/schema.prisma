@@ -48,6 +48,7 @@ model Votes {
   @@index([otp, otpExpiresAt], name: "idx_otp_expires")
   @@index([timestamp], name: "idx_timestamp")
   @@index([otp, timestamp], name: "idx_votes_otp_date_base")
+  @@index([isValidated], name: "idx_isValidated")
 }
 
 model Users {
