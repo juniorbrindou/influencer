@@ -41,6 +41,12 @@ model Votes {
   timestamp     DateTime      @default(now())
   isSpecial     Boolean?      @default(false)
   influenceurs  Influenceurs? @relation(fields: [influenceurId], references: [id])
+
+  // Indexes basiques (sans clause WHERE)
+  @@index([influenceurId], name: "idx_influenceurId")
+  @@index([phoneNumber, timestamp], name: "idx_phone_timestamp")
+  @@index([otp, otpExpiresAt], name: "idx_otp_expires")
+  @@index([timestamp], name: "idx_timestamp")
 }
 
 model Users {

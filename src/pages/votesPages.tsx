@@ -66,9 +66,7 @@ const VotesPage: React.FC = () => {
 						{votes.map((vote) => (
 							<tr key={vote.id} className="border-b hover:bg-gray-50">
 								<td className="px-6 py-4">{vote.id}</td>
-								{/* <td className="px-6 py-4">{vote.influenceur?.name || 'N/A'}</td> */}
 								<td className="px-6 py-4">{vote.phoneNumber}</td>
-								{/* <td className="px-6 py-4">{new Date(vote.createdAt).toLocaleString()}</td> */}
 								<td className="px-6 py-4">{vote.isSpecial ? 'Oui' : 'Non'}</td>
 								<td className="px-6 py-4">
 									<button
