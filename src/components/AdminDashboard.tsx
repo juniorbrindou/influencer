@@ -19,7 +19,7 @@ const StatCard = React.memo(({
   subValue?: string;
 }) => {
   const [displayValue, setDisplayValue] = useState(0);
-  
+
   useEffect(() => {
     if (typeof value === 'number') {
       setDisplayValue(value);
@@ -38,12 +38,12 @@ const StatCard = React.memo(({
     <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-lg p-4`}>
       <p className="text-sm font-medium">{title}</p>
       <p className="text-2xl font-bold">
-        {typeof value === 'number' ? 
-          <CountUp 
+        {typeof value === 'number' ?
+          <CountUp
             start={displayValue}
-            end={value} 
-            duration={1.5} 
-            separator=","
+            end={value}
+            duration={1.5}
+            separator="."
           /> : value}
       </p>
       {subValue && <p className="text-xs opacity-75">{subValue}</p>}
@@ -111,7 +111,9 @@ const AdminDashboard: React.FC = () => {
       votesByCategory[category.id] = categoryVotes;
     });
 
-    const specialCategoryTotal = votes.filter(vote => vote.isSpecial).length;
+    // Trouver la catégorie spéciale et son total
+    // 3. Calcul des votes spéciaux (uniquement ceux marqués isSpecial)
+    const specialVotes = votes.filter(v => v.isSpecial && v.isValidated).length;
 
 
     // Trouver la catégorie la plus populaire (hors spéciale)
@@ -137,7 +139,7 @@ const AdminDashboard: React.FC = () => {
     // Utilisez les valeurs précédentes pour l'incrémentation
     setCategoryStats(prev => ({
       totalByCategory: votesByCategory,
-      specialCategoryTotal,
+      specialCategoryTotal: specialVotes,
       mostPopularCategory: mostPopular,
       todayVotes: todayVotes // Ici, vous pourriez aussi faire prev.todayVotes + newVotes si vous voulez incrémenter
     }));
@@ -149,18 +151,18 @@ const AdminDashboard: React.FC = () => {
 
   // Calcul des statistiques
   useEffect(() => {
-  const mainInfluenceurs = influenceurs.filter(inf => inf.isMain);
-  const totalVotes = mainInfluenceurs.reduce((total, influenceur) => {
-    return total + (Number(influenceur.voteCount) || 0);
-  }, 0);
+    const mainInfluenceurs = influenceurs.filter(inf => inf.isMain);
+    const totalVotes = mainInfluenceurs.reduce((total, influenceur) => {
+      return total + (Number(influenceur.voteCount) || 0);
+    }, 0);
 
-  setStats(prev => ({
-    totalInfluenceurs: mainInfluenceurs.length,
-    totalVotes: totalVotes, // Ici, vous pourriez faire prev.totalVotes + newVotes si vous voulez incrémenter
-    totalVoteRecords: votes.length,
-    lastUpdated: new Date()
-  }));
-}, [influenceurs, votes]);
+    setStats(prev => ({
+      totalInfluenceurs: mainInfluenceurs.length,
+      totalVotes: totalVotes, // Ici, vous pourriez faire prev.totalVotes + newVotes si vous voulez incrémenter
+      totalVoteRecords: votes.length,
+      lastUpdated: new Date()
+    }));
+  }, [influenceurs, votes]);
 
   // Fonction pour uploader une image
   const uploadImage = useCallback(async (file: File): Promise<string> => {

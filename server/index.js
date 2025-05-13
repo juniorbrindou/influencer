@@ -517,6 +517,19 @@ io.on("connection", (socket) => {
   });
 });
 
+app.get("/api/votes", async (req, res) => {
+  try {
+    const votes = await prisma.votes.findMany({
+      orderBy: { timestamp: "desc" },
+      take: 100000, // Limite pour éviter de surcharger
+    });
+    res.json(votes);
+  } catch (error) {
+    console.error("Erreur récupération votes:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 app.delete("/api/votes/:id", async (req, res) => {
   const { id } = req.params;
 
