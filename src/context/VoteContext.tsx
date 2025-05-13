@@ -54,10 +54,7 @@ const socket = io(SOCKET_URL, {
 
 export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [influenceurs, setInfluenceurs] = useState<Influenceur[]>([]);
-  const [votes, setVotes] = useState<Vote[]>(() => {
-    const stored = 0
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [votes, setVotes] = useState<Vote[]>([]);
   const [selectedInfluenceur, setSelectedInfluenceur] = useState<Influenceur | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
@@ -292,6 +289,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchCategories();
     fetchInfluenceurs();
+    fetchVotes();
   }, []);
 
 
@@ -383,6 +381,23 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
   };
+
+  const fetchVotes = async () => {
+    try {
+      const response = await fetch(BACKEND_URL + '/api/votes', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
+      setVotes(await response.json());
+    } catch (error) {
+      console.error('Erreur chargement votes:', error);
+    }
+  };
+
 
   /**
    * Fonction pour supprimer un influenceur

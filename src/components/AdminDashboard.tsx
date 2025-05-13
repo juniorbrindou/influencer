@@ -111,9 +111,8 @@ const AdminDashboard: React.FC = () => {
       votesByCategory[category.id] = categoryVotes;
     });
 
-    // Trouver la catégorie spéciale et son total
-    const specialCat = categories.find(c => c.name === "INFLUENCEUR2LANNEE");
-    const specialCategoryTotal = specialCat ? votesByCategory[specialCat.id] || 0 : 0;
+    const specialCategoryTotal = votes.filter(vote => vote.isSpecial).length;
+
 
     // Trouver la catégorie la plus populaire (hors spéciale)
     const nonSpecialCategories = categories.filter(c => c.name !== "INFLUENCEUR2LANNEE");
@@ -210,13 +209,6 @@ const AdminDashboard: React.FC = () => {
 
 
 
-  const handleDeleteCategory = async (id: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
-      await removeCategory(id);
-    }
-  };
-
-
   const handleSaveEditCategory = async () => {
     if (!editCategory) return;
 
@@ -237,10 +229,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleEditCategory = (category: Category) => {
-    setEditingCategoryId(category.id);
-    setEditCategory({ ...category });
-  };
 
   const handleCancelEditCategory = () => {
     setEditingCategoryId(null);
@@ -291,18 +279,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  /**
-   * Prépare l'édition d'un influenceur.
-   * Définit l'ID de l'influenceur à éditer et copie ses données dans l'état editInfluenceur.
-   * @param influenceur L'objet Influenceur à éditer.
-   */
-  const handleEditInfluenceur = (influenceur: Influenceur) => {
-    // Définit l'ID de l'influenceur qui est en cours d'édition
-    setEditingInfluenceurId(influenceur.id);
-    // Copie les données de l'influenceur dans l'état dédié à l'édition
-    // Utilise l'opérateur spread (...) pour créer une copie et éviter les mutations directes
-    setEditInfluenceur({ ...influenceur });
-  };
 
   /**
    * Gère la sauvegarde des modifications apportées à un influenceur.
@@ -321,17 +297,7 @@ const AdminDashboard: React.FC = () => {
     setEditInfluenceur(null);
   };
 
-  /**
-   * Gère la suppression d'un influenceur après confirmation.
-   * @param id L'ID de l'influenceur à supprimer.
-   */
-  const handleDeleteInfluenceur = (id: string) => {
-    // Affiche une boîte de dialogue de confirmation
-    if (window.confirm('Êtes-vous sûr de vouloir retirer cet influenceur de la course ?')) {
-      // Appelle la fonction pour supprimer l'influenceur via le contexte
-      removeInfluenceur(id);
-    }
-  };
+
 
   // Rendu JSX du composant
   return (
