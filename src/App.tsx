@@ -23,7 +23,7 @@ function App() {
               <Route path="/category/:id" element={<div className="foreground-content dark-bg-page"><CategoryPage /></div>} />
               <Route path="/confirmation" element={<div className="foreground-content"><ConfirmationPage /></div>} />
               <Route path="/results" element={<div className="foreground-content"><ResultsPage /></div>} />
-              <Route path="/admin" element={<div className="foreground-content"><AdminPage /></div>} />
+              <Route path="/ia" element={<div className="foreground-content"><AdminPage /></div>} />
               
               {/* Redirection pour l'ancienne route /results */}
               <Route path="/results" element={

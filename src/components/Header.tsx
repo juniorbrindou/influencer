@@ -30,13 +30,13 @@ const Header: React.FC = () => {
             <span>Résultats</span>
           </Link>
 
-          <Link
+          {/* <Link
             to="/admin"
             className={`px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-400 transition-colors ${location.pathname === '/admin' ? 'bg-yellow-400' : ''
               }`}
           >
             Admin
-          </Link>
+          </Link> */}
         </nav>
       </div>
     </header>
