@@ -546,7 +546,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
     // 1. Vérifier le cache
     const cachedResults = await redisClient.get(cacheKey);
     if (cachedResults) {
-      console.log('resuperation depuis le cache ');
+      console.log("resuperation depuis le cache ");
       return res.json(JSON.parse(cachedResults));
     }
 
@@ -554,7 +554,6 @@ app.get("/api/results/:categoryId", async (req, res) => {
     const specialCategory = await prisma.category.findFirst({
       where: { name: "INFLUENCEUR2LANNEE" },
     });
-
 
     // Récupérer les influenceurs avec leurs votes
     const influenceurs = await prisma.influenceurs.findMany({
@@ -601,7 +600,6 @@ app.get("/api/results/:categoryId", async (req, res) => {
       (a, b) => b.voteCount - a.voteCount
     );
 
-
     const results = {
       influenceurs: sortedResults,
       totalVotes,
@@ -609,7 +607,8 @@ app.get("/api/results/:categoryId", async (req, res) => {
     };
 
     // 3. Mettre en cache pour 5 minutes
-    await redisClient.setEx(cacheKey, 300, JSON.stringify(results)); // 5 minutes cache
+    // await redisClient.setEx(cacheKey, 300, JSON.stringify(results)); // 5 minutes cache
+    await redisClient.setEx(cacheKey, 30, JSON.stringify(results)); // 30 secondes de cache
 
     res.json(results);
   } catch (error) {
