@@ -124,7 +124,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
   return (
     <div className={`rounded-lg p-6 ${
       styleLevel === 3 ? 
-        'bg-gradient-to-br from-purple-900 to-indigo-800 text-white shadow-xl border-2 border-yellow-400' :
+        'bg-gradient-to-br from-purple-900 to-indigo-800 text-white shadow-xl' :
       styleLevel === 2 ? 
         'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-800 shadow-lg border border-indigo-200' :
         'bg-white text-gray-800 shadow-md'
