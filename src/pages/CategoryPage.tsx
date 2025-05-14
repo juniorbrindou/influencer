@@ -72,7 +72,7 @@ const CategoryPage: React.FC = () => {
         {/* Message si aucune catégorie trouvée */}
         {!category && (
           <div className="text-center py-12">
-            <p className="text-gray-500">Catégorie non trouvée</p>
+            <p className="text-gray-500">Chargement en cours ...</p>
           </div>
         )}
 

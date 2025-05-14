@@ -10,6 +10,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import twilio from "twilio";
+import { redisClient } from "./lib/redis.js";
 
 dotenv.config();
 const twilioClient = twilio(
@@ -539,12 +540,21 @@ app.delete("/api/votes/:id", async (req, res) => {
 
 app.get("/api/results/:categoryId", async (req, res) => {
   const { categoryId } = req.params;
+  const cacheKey = `results:${categoryId}`;
 
   try {
-    // Trouver la catégorie spéciale
+    // 1. Vérifier le cache
+    const cachedResults = await redisClient.get(cacheKey);
+    if (cachedResults) {
+      console.log('resuperation depuis le cache ');
+      return res.json(JSON.parse(cachedResults));
+    }
+
+    // 2. Si pas en cache, exécuter la requête normale
     const specialCategory = await prisma.category.findFirst({
       where: { name: "INFLUENCEUR2LANNEE" },
     });
+
 
     // Récupérer les influenceurs avec leurs votes
     const influenceurs = await prisma.influenceurs.findMany({
@@ -591,11 +601,17 @@ app.get("/api/results/:categoryId", async (req, res) => {
       (a, b) => b.voteCount - a.voteCount
     );
 
-    res.json({
+
+    const results = {
       influenceurs: sortedResults,
       totalVotes,
       isSpecialCategory,
-    });
+    };
+
+    // 3. Mettre en cache pour 5 minutes
+    await redisClient.setEx(cacheKey, 300, JSON.stringify(results)); // 5 minutes cache
+
+    res.json(results);
   } catch (error) {
     console.error("Erreur récupération résultats:", error);
     res.status(500).json({ error: "Erreur serveur" });
