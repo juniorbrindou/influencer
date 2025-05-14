@@ -43,7 +43,7 @@ export const useSocket = ({
     });
 
     socket.on('voteUpdate', ({ influenceurId, newVoteCount }) => {
-      console.log('🔥 Vote mis à jour:', influenceurId);
+      // console.log('🔥 Vote mis à jour:', influenceurId);
       setInfluenceurs(prev =>
         prev.map(inf =>
           inf.id === influenceurId ? { ...inf, voteCount: newVoteCount } : inf

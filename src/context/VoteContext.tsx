@@ -88,7 +88,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     socket.on('voteUpdate', ({ influenceurId, newVoteCount }) => {
-      console.log("🔥 Vote mis à jour:", influenceurId, newVoteCount);
+      // console.log("🔥 Vote mis à jour:", influenceurId, newVoteCount);
 
       setInfluenceurs(prev =>
         prev.map(inf =>
