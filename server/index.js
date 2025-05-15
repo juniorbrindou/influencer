@@ -516,7 +516,7 @@ app.get("/api/votes", async (req, res) => {
   try {
     const votes = await prisma.votes.findMany({
       orderBy: { timestamp: "desc" },
-      take: 100000, // Limite pour éviter de surcharger
+      take: 10, // Limite pour éviter de surcharger
     });
     res.json(votes);
   } catch (error) {
