@@ -44,7 +44,8 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 // Configuration du socket adaptée au serveur
 const socket = io(SOCKET_URL, {
   withCredentials: true,
-  transports: ['websocket', 'polling'],
+  transports: ['websocket'],
+  // transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000

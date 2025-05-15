@@ -24,7 +24,7 @@ const __dirname = dirname(__filename);
 
 const prisma = new PrismaClient();
 const app = express();
-const httpServer = createServer(app);
+const httpServer = createServer({ maxHttpBufferSize: 1e6 , pingTimeout: 60000}, app);
 
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
@@ -38,7 +38,11 @@ const io = new Server(httpServer, {
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   },
-  transports: ["websocket", "polling"],
+  transports: ["websocket"],
+  pingInterval: 10000, // Augmentez l'intervalle de ping
+  pingTimeout: 5000, // Réduisez le timeout
+  maxHttpBufferSize: 1e5, // Limitez la taille des messages
+  serveClient: false, // Désactivez la livraison du client
 });
 
 app.use(
