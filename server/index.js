@@ -607,7 +607,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
     };
 
     // 3. Mettre en cache pour 5 minutes
-    await redisClient.setEx(cacheKey, 10, JSON.stringify(results)); // 10 secondes de cache
+    await redisClient.setEx(cacheKey, 30, JSON.stringify(results)); // 10 secondes de cache
 
     res.json(results);
   } catch (error) {
