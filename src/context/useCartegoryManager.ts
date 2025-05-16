@@ -14,9 +14,8 @@ const socket = io(SOCKET_URL, {
 export const useCategoryManager = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Initialisé à true
 
-  // Fonction pour ajouter une catégorie
   const addCategory = async (category: Partial<Category>) => {
     try {
       setIsLoading(true);
@@ -28,7 +27,6 @@ export const useCategoryManager = () => {
     }
   };
 
-  // Fonction pour supprimer une catégorie
   const removeCategory = async (id: string) => {
     try {
       setIsLoading(true);
@@ -40,7 +38,6 @@ export const useCategoryManager = () => {
     }
   };
 
-  // Fonction pour mettre à jour une catégorie
   const updateCategory = async (category: Category) => {
     try {
       setIsLoading(true);
@@ -52,9 +49,9 @@ export const useCategoryManager = () => {
     }
   };
 
-  // Fonction pour récupérer les catégories (optionnel - si besoin d'un fetch initial)
   const fetchCategories = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch(SOCKET_URL + `/api/categories`, {
         method: 'GET',
         credentials: 'include',
@@ -66,14 +63,19 @@ export const useCategoryManager = () => {
 
       const data = await response.json();
       setCategories(data);
+      setIsLoading(false);
     } catch (err) {
       setError('Erreur lors du chargement des catégories');
       console.error(err);
+      setIsLoading(false);
     }
   };
 
-  // Écouter les événements WebSocket
   useEffect(() => {
+    // Chargement initial
+    fetchCategories();
+
+    // Écoute des mises à jour en temps réel
     socket.on("categoriesUpdate", (data) => {
       if (data.newCategory) {
         setCategories(prev => [...prev, data.newCategory]);
@@ -94,9 +96,6 @@ export const useCategoryManager = () => {
       setError(errorMessage);
       setIsLoading(false);
     });
-
-    // Chargement initial
-    fetchCategories();
 
     // Cleanup
     return () => {

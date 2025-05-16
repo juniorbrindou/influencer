@@ -8,13 +8,8 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   const gotTocategories = (category: Category) => {
-    // if (category.name == 'INFLUENCEUR2LANNEE') {
-    //   setOfferSecondVote(true)
-    // }
     navigate(`/category/${category.id}`)
   }
-
-
 
 
 

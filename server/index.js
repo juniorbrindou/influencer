@@ -623,9 +623,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
 // Routes pour les catégories
 app.get("/api/categories", async (req, res) => {
   try {
-    const categories = await prisma.category.findMany({
-      include: { influenceurs: true },
-    });
+    const categories = await prisma.category.findMany();
     res.json(categories);
   } catch (error) {
     res
@@ -676,6 +674,41 @@ app.get("/api/influenceurs", async (req, res) => {
       imageUrl: inf.imageUrl,
       isMain: inf.isMain,
       categoryId: inf.categoryId, // Assurez-vous que cette propriété est incluse
+      voteCount: inf.votes ? inf.votes.length : 0,
+    }));
+
+    res.json(formattedInfluenceurs);
+  } catch (error) {
+    console.error("Erreur récupération influenceurs:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get("/api/influenceurs", async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+    
+    const where = {};
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    const influenceurs = await prisma.influenceurs.findMany({
+      where,
+      include: {
+        votes: {
+          where: { isValidated: true },
+          select: { id: true },
+        },
+      },
+    });
+
+    const formattedInfluenceurs = influenceurs.map((inf) => ({
+      id: inf.id,
+      name: inf.name,
+      imageUrl: inf.imageUrl,
+      isMain: inf.isMain,
+      categoryId: inf.categoryId,
       voteCount: inf.votes ? inf.votes.length : 0,
     }));
 
