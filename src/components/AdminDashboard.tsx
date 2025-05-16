@@ -186,6 +186,12 @@ const AdminDashboard: React.FC = () => {
     }
   }, []);
 
+  const handleEditCategory = (category: Category) => {
+    setEditingCategoryId(category.id);
+    setEditCategory({ ...category });
+  };
+  
+
   // Fonctions pour la gestion des catégories
   const handleAddCategory = async () => {
     if (!newCategory?.name) return;
@@ -208,8 +214,31 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  /**
+   * Prépare l'édition d'un influenceur.
+   * Définit l'ID de l'influenceur à éditer et copie ses données dans l'état editInfluenceur.
+   * @param influenceur L'objet Influenceur à éditer.
+   */
+  const handleEditInfluenceur = (influenceur: Influenceur) => {
+    // Définit l'ID de l'influenceur qui est en cours d'édition
+    setEditingInfluenceurId(influenceur.id);
+    // Copie les données de l'influenceur dans l'état dédié à l'édition
+    // Utilise l'opérateur spread (...) pour créer une copie et éviter les mutations directes
+    setEditInfluenceur({ ...influenceur });
+  };
 
 
+  /**
+   * Gère la suppression d'un influenceur après confirmation.
+   * @param id L'ID de l'influenceur à supprimer.
+   */
+  const handleDeleteInfluenceur = (id: string) => {
+    // Affiche une boîte de dialogue de confirmation
+    if (window.confirm('Êtes-vous sûr de vouloir retirer cet influenceur de la course ?')) {
+      // Appelle la fonction pour supprimer l'influenceur via le contexte
+      removeInfluenceur(id);
+    }
+  };
 
   const handleSaveEditCategory = async () => {
     if (!editCategory) return;
@@ -780,7 +809,7 @@ const AdminDashboard: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            {/* <button
+                            <button
                               onClick={() => handleEditInfluenceur(influenceur)}
                               className="text-indigo-600 hover:text-indigo-900 mr-3"
                             >
@@ -791,7 +820,7 @@ const AdminDashboard: React.FC = () => {
                               className="text-red-600 hover:text-red-900"
                             >
                               <Trash2 className="h-5 w-5 inline" />
-                            </button> */}
+                            </button>
                           </>
                         )}
                       </td>

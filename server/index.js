@@ -707,6 +707,11 @@ app.delete("/api/influenceurs/:id", async (req, res) => {
       return res.status(404).json({ error: "Influenceur non trouvé" });
     }
 
+    // Supprimer tous les votes liés à cet influenceur
+    await prisma.votes.deleteMany({
+      where: { influenceurId: id },
+    });
+
     // Supprimer l'influenceur
     await prisma.influenceurs.delete({
       where: { id: id },

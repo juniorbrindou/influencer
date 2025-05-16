@@ -202,18 +202,12 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Charger les influenceurs au démarrage avec fetch indépendant du socket
-  useEffect(() => {
-    fetchInfluenceurs();
-  }, []);
-
-
   useEffect(() => {
     if (!socket) return;
 
     const handleVoteValidated = ({ influenceurId }: { influenceurId: string }) => {
       console.log("voteValidated reçu pour:", influenceurId);
-      fetchInfluenceurs(); // 💥 on recharge
+      // fetchInfluenceurs(); // 💥 on recharge
     };
 
     socket.on("voteValidated", handleVoteValidated);
@@ -290,7 +284,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchCategories();
     fetchInfluenceurs();
-    fetchVotes();
+    // fetchVotes();
   }, []);
 
 
