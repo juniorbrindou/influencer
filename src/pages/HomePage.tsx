@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
   return (
     <div>
       {/* Modale d'annonce */}
-        {showModal && <ModalImpact onClose={() => setShowModal(false)} />}
+        {/* {showModal && <ModalImpact onClose={() => setShowModal(false)} />} */}
 
       {/* Hero Banner */}
       <div className="w-full h-[400px] relative mb-12">
