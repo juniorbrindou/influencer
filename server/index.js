@@ -34,9 +34,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: [
       "http://localhost:5173",
-      "http://173.249.54.200/",
-      "https://influenceur2lannee.com",
-      "https://www.influenceur2lannee.com",
+      "http://173.249.54.200",
     ],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
