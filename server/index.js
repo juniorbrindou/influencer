@@ -11,7 +11,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import twilio from "twilio";
 import { redisClient } from "./lib/redis.js";
-
+import requestIp from "request-ip";
 dotenv.config();
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
@@ -24,7 +24,10 @@ const __dirname = dirname(__filename);
 
 const prisma = new PrismaClient();
 const app = express();
-const httpServer = createServer({ maxHttpBufferSize: 1e6 , pingTimeout: 60000}, app);
+const httpServer = createServer(
+  { maxHttpBufferSize: 1e6, pingTimeout: 60000 },
+  app
+);
 
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
@@ -44,6 +47,48 @@ const io = new Server(httpServer, {
   maxHttpBufferSize: 1e5, // Limitez la taille des messages
   serveClient: false, // Désactivez la livraison du client
 });
+
+app.use(requestIp.mw());
+
+// Middleware de limitation de votes
+// const checkVoteLimits = async (req, res, next) => {
+//   const ip = req.clientIp;
+//   const deviceHash = req.headers["x-device-hash"] || "unknown";
+
+//   // Vérifier les votes récents pour cette IP
+//   const ipVoteCount = await prisma.votes.count({
+//     where: {
+//       ipAddress: ip,
+//       timestamp: {
+//         gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
+//       },
+//     },
+//   });
+
+//   if (ipVoteCount > 50) {
+//     // Limite de 50 votes par IP par jour
+//     return res
+//       .status(429)
+//       .json({ error: "Trop de votes depuis cette adresse IP" });
+//   }
+
+//   // Vérifier les votes pour cet appareil
+//   // const deviceVoteCount = await prisma.votes.count({
+//   //   where: {
+//   //     deviceHash,
+//   //     timestamp: {
+//   //       gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
+//   //     },
+//   //   },
+//   // });
+
+//   // if (deviceVoteCount > 3) {
+//   //   // Limite de 3 votes par appareil par jour
+//   //   return res.status(429).json({ error: "Trop de votes depuis cet appareil" });
+//   // }
+
+//   next();
+// };
 
 app.use(
   cors({
@@ -106,11 +151,38 @@ io.on("connection", (socket) => {
   // venant de gpt
   // WebSocket event for submitting a vote
   // Modifiez la partie "submitVote" comme suit :
+
   socket.on(
     "submitVote",
     async ({ influenceurId, phoneNumber, isSpecialVote, otp }) => {
       try {
+        const deviceHash = socket.handshake.headers["x-device-hash"];
+        const clientIp =
+          socket.request.headers["x-forwarded-for"] ||
+          socket.request.connection.remoteAddress;
+
+        console.log("deviceHash: ", deviceHash);
+        console.log("clientIp: ", clientIp);
         console.log("ce vote est speciel-------------: ", isSpecialVote);
+
+        // Vérifier les limites de vote -------------------
+        const ipVoteCount = await prisma.votes.count({
+          where: {
+            ipAddress: clientIp,
+            timestamp: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
+            },
+          },
+        });
+
+        if (ipVoteCount >= 50) {
+          socket.emit(
+            "voteError",
+            "Trop de votes depuis cette adresse IP"
+          );
+          return;
+        }
+
 
         // Récupérer l'influenceur avec sa catégorie
         const influenceurWithCat = await prisma.influenceurs.findUnique({
@@ -191,6 +263,8 @@ io.on("connection", (socket) => {
             isValidated: true,
             otp: otp,
             otpExpiresAt: new Date(),
+            ipAddress: clientIp,
+            // deviceHash: deviceHash
           },
         });
 
@@ -687,7 +761,7 @@ app.get("/api/influenceurs", async (req, res) => {
 app.get("/api/influenceurs", async (req, res) => {
   try {
     const { categoryId } = req.query;
-    
+
     const where = {};
     if (categoryId) {
       where.categoryId = categoryId;

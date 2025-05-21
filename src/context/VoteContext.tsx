@@ -48,7 +48,10 @@ const socket = io(SOCKET_URL, {
   // transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionAttempts: 5,
-  reconnectionDelay: 1000
+  reconnectionDelay: 1000,
+  extraHeaders: {
+    'x-device-hash': await generateStrongFingerprint()
+  }
 });
 
 
@@ -517,48 +520,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
 
-
-  async function generateStrongFingerprint() {
-    // 1. FingerprintJS (device unique)
-    const fp = await import("@fingerprintjs/fingerprintjs");
-    const { visitorId } = await (await fp.load()).get();
-
-    // 2. IP publique (peut être partagée)
-    const ip = await fetch("https://api.ipify.org?format=json")
-      .then(res => res.json())
-      .catch(() => ({ ip: "unknown-ip" }));
-
-    // 3. Session aléatoire (unique par onglet)
-    const sessionId = localStorage.getItem("sessionId") || Math.random().toString(36).slice(2);
-    localStorage.setItem("sessionId", sessionId);
-
-    // 4. Combinaison finale (SHA-256)
-    const combinedData = `${visitorId}-${ip}-${sessionId}`;
-    const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(combinedData));
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-
-
-
-  // const generateEnhancedFingerprint = async (): Promise<string> => {
-  //   const fingerprintData = {
-  //     userAgent: navigator.userAgent,
-  //     screenResolution: `${window.screen.width}x${window.screen.height}`,
-  //     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  //     colorDepth: window.screen.colorDepth,
-  //     languages: navigator.languages.join(','),
-  //     hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-  //   };
-
-  //   const encoder = new TextEncoder();
-  //   const data = encoder.encode(JSON.stringify(fingerprintData));
-  //   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  //   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  //   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  // };
-
-
   /**
  * Fonction pour vérifier si un numéro peut voter (n'a pas déjà voté)
  * @returns {Promise<boolean>} - true si le numéro a déjà voté, false sinon
@@ -688,3 +649,25 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </VoteContext.Provider>
   );
 };
+
+
+async function generateStrongFingerprint(): Promise<string> {
+    // 1. FingerprintJS (device unique)
+    const fp = await import("@fingerprintjs/fingerprintjs");
+    const { visitorId } = await (await fp.load()).get();
+
+
+    // const fp = await import("@fingerprintjs/fingerprintjs-pro");
+    // const { visitorId } = await (await fp.load({ apiKey: import.meta.env.VITE_FPJS_API_KEY})).get();
+
+    // 2. IP publique (peut être partagée)
+    const ip = await fetch("https://api.ipify.org?format=json")
+      .then(res => res.json())
+      .catch(() => ({ ip: "unknown-ip" }));
+
+
+    // 4. Combinaison finale (SHA-256)
+    const combinedData = `${visitorId}-${ip}`;
+    const hashBuffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(combinedData));
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }

@@ -40,17 +40,16 @@ model Votes {
   isValidated   Boolean       @default(false)
   timestamp     DateTime      @default(now())
   isSpecial     Boolean?      @default(false)
+  ipAddress     String?
   influenceurs  Influenceurs? @relation(fields: [influenceurId], references: [id])
-  ipAddress     String        // Adresse IP du client
 
-  // Indexes basiques (sans clause WHERE)
-  @@index([influenceurId], name: "idx_influenceurId")
-  @@index([phoneNumber, timestamp], name: "idx_phone_timestamp")
-  @@index([otp, otpExpiresAt], name: "idx_otp_expires")
-  @@index([timestamp], name: "idx_timestamp")
-  @@index([otp, timestamp], name: "idx_votes_otp_date_base")
-  @@index([isValidated], name: "idx_isValidated")
-  @@index([ipAddress], name: "idx_ip_timestamp")
+  @@index([influenceurId], map: "idx_influenceurId")
+  @@index([phoneNumber, timestamp], map: "idx_phone_timestamp")
+  @@index([otp, otpExpiresAt], map: "idx_otp_expires")
+  @@index([timestamp], map: "idx_timestamp")
+  @@index([otp, timestamp], map: "idx_votes_otp_date_base")
+  @@index([isValidated], map: "idx_isValidated")
+  @@index([ipAddress, timestamp], map: "idx_ipAddress")
 }
 
 model Users {
