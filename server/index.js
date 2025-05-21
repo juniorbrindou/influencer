@@ -170,12 +170,12 @@ io.on("connection", (socket) => {
           where: {
             ipAddress: clientIp,
             timestamp: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
+              gte: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 heures
             },
           },
         });
 
-        if (ipVoteCount >= 50) {
+        if (ipVoteCount >= 20) {
           socket.emit(
             "voteError",
             "Trop de votes depuis cette adresse IP"
