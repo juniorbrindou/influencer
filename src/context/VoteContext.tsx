@@ -49,9 +49,9 @@ const socket = io(SOCKET_URL, {
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
-  extraHeaders: {
-    'x-device-hash': await generateStrongFingerprint()
-  }
+  // extraHeaders: {
+  //   'x-device-hash': await generateStrongFingerprint()
+  // }
 });
 
 
