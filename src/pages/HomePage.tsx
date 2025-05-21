@@ -1,11 +1,19 @@
-import React from 'react';
+// src/pages/HomePage.tsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCategoryManager } from '../context/useCartegoryManager';
 import { Category } from '../types';
+import ModalImpact from '../components/ModalAnnouncement';
 
 const HomePage: React.FC = () => {
   const { categories } = useCategoryManager();
   const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+
+  // Afficher la modale à chaque chargement de la page
+  useEffect(() => {
+    setShowModal(true);
+  }, []);
 
   const gotTocategories = (category: Category) => {
     navigate(`/category/${category.id}`)
@@ -15,7 +23,10 @@ const HomePage: React.FC = () => {
 
   return (
     <div>
-      {/* Hero Banner (inchangé) */}
+      {/* Modale d'annonce */}
+        {showModal && <ModalImpact onClose={() => setShowModal(false)} />}
+
+      {/* Hero Banner */}
       <div className="w-full h-[400px] relative mb-12">
         <img
           src="/banner.jpg"

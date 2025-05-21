@@ -6,5 +6,13 @@
     "axe/name-role-value": "off",
     "axe/forms": "off",
     "no-inline-styles": "off"
-  }
+  },
+  "browserslist": [
+    "defaults",
+    "not ie 11",
+    "not and_ff <= 125",
+    "not firefox <= 125",
+    "not ios_saf <= 16.7",
+    "not opera <= 109"
+  ]
 }
