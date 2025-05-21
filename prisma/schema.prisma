@@ -41,6 +41,7 @@ model Votes {
   timestamp     DateTime      @default(now())
   isSpecial     Boolean?      @default(false)
   influenceurs  Influenceurs? @relation(fields: [influenceurId], references: [id])
+  ipAddress     String        // Adresse IP du client
 
   // Indexes basiques (sans clause WHERE)
   @@index([influenceurId], name: "idx_influenceurId")
@@ -49,6 +50,7 @@ model Votes {
   @@index([timestamp], name: "idx_timestamp")
   @@index([otp, timestamp], name: "idx_votes_otp_date_base")
   @@index([isValidated], name: "idx_isValidated")
+  @@index([ipAddress], name: "idx_ip_timestamp")
 }
 
 model Users {
