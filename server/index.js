@@ -155,6 +155,23 @@ io.on("connection", (socket) => {
   socket.on(
     "submitVote",
     async ({ influenceurId, phoneNumber, isSpecialVote, otp }) => {
+      const politeErrorMessages = {
+        rateLimit:
+          "Trop de votes depuis cette adresse IP. Veuillez réessayer plus tard.",
+        alreadyVotedSpecial:
+          "Vous avez déjà voté dans la catégorie spéciale aujourd'hui. Merci de revenir demain.",
+        needNormalVoteFirst:
+          "Veuillez d'abord voter pour vos candidats habituels avant d'accéder au vote spécial.",
+        allVotesUsed:
+          "Vous avez épuisé tous vos votes pour aujourd'hui. Merci de revenir demain.",
+        alreadyVotedCategory:
+          "Vous avez déjà voté dans cette catégorie aujourd'hui. Merci de revenir demain.",
+        databaseError:
+          "Désolé, un problème technique est survenu. Veuillez réessayer dans quelques instants.",
+        timeoutError:
+          "Le système est temporairement occupé. Veuillez réessayer dans un moment.",
+      };
+
       try {
         const deviceHash = socket.handshake.headers["x-device-hash"];
         const clientIp =
@@ -165,46 +182,58 @@ io.on("connection", (socket) => {
         console.log("clientIp: ", clientIp);
         console.log("ce vote est speciel-------------: ", isSpecialVote);
 
-        // Vérifier les limites de vote -------------------
-        const ipVoteCount = await prisma.votes.count({
-          where: {
-            ipAddress: clientIp,
-            timestamp: {
-              gte: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 heures
+        // Vérifier les limites de vote avec timeout
+        const ipVoteCount = await prisma.votes
+          .count({
+            where: {
+              ipAddress: clientIp,
+              timestamp: {
+                gte: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 heure
+              },
             },
-          },
-        });
+          })
+          .catch((err) => {
+            console.error("Erreur vérification limite IP:", err);
+            throw new Error("timeoutError");
+          });
 
         if (ipVoteCount >= 20) {
-          socket.emit(
-            "voteError",
-            "Trop de votes depuis cette adresse IP"
-          );
+          socket.emit("voteError", politeErrorMessages.rateLimit);
           return;
         }
 
-
-        // Récupérer l'influenceur avec sa catégorie
-        const influenceurWithCat = await prisma.influenceurs.findUnique({
-          where: { id: influenceurId },
-          include: { category: true },
-        });
+        // Récupérer l'influenceur avec timeout
+        const influenceurWithCat = await prisma.influenceurs
+          .findUnique({
+            where: { id: influenceurId },
+            include: { category: true },
+          })
+          .catch((err) => {
+            console.error("Erreur récupération influenceur:", err);
+            throw new Error("timeoutError");
+          });
 
         // Date du jour à minuit
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const existingVotes = await prisma.votes.findMany({
-          where: {
-            otp: otp,
-            timestamp: { gte: today },
-            influenceurs: {
-              categoryId: influenceurWithCat.categoryId,
+        // Vérification des votes existants avec timeout
+        const existingVotes = await prisma.votes
+          .findMany({
+            where: {
+              otp: otp,
+              timestamp: { gte: today },
+              influenceurs: {
+                categoryId: influenceurWithCat.categoryId,
+              },
+              isValidated: true,
             },
-            isValidated: true,
-          },
-          include: { influenceurs: { include: { category: true } } },
-        });
+            include: { influenceurs: { include: { category: true } } },
+          })
+          .catch((err) => {
+            console.error("Erreur vérification votes existants:", err);
+            throw new Error("timeoutError");
+          });
 
         // Logique de validation
         const hasNormalVote = existingVotes.some((v) => !v.isSpecial);
@@ -212,73 +241,60 @@ io.on("connection", (socket) => {
 
         if (isSpecialVote) {
           if (hasSpecialVote) {
-            console.log("il a deja voté");
-            socket.emit(
-              "voteError",
-              "Vous avez déjà voté dans la catégorie spéciale aujourd'hui. Revenez demain"
-            );
+            socket.emit("voteError", politeErrorMessages.alreadyVotedSpecial);
             return;
           }
           if (!hasNormalVote) {
-            console.log(
-              "il na jamais voté, on lui donne un message pour lui dire de voter dans la categorie dabord"
-            );
-            socket.emit(
-              "voteError",
-              "Revenez ici apres avoir votés vos differents candidats. Le dernier vote de la journée se fait ici"
-            );
+            socket.emit("voteError", politeErrorMessages.needNormalVoteFirst);
             return;
           }
         } else if (hasNormalVote) {
-          if (hasSpecialVote) {
-            console.log(
-              "Le vote nest pas special et il a deja voté a aujoud'hui dans spécial: on lui envoie un message dans le formulaire"
-            );
-            socket.emit(
-              "voteError",
-              "Vous avez déjà épuisé tous vos votes. Revenez demain"
-            );
-          } else {
-            console.log(
-              "le vote nest pas pas special. Il a deja voté dans cette cat: "
-            );
-            socket.emit(
-              "voteError",
-              "Vous avez déjà effectué un vote dans cette catégorie Aujourd'hui. Revenez demain"
-            );
-
-            // console.log('pour renvoyer vers la modale de vote special');
-            // socket.emit("offerSecondVote", { canVoteSpecial: true });
-          }
+          const message = hasSpecialVote
+            ? politeErrorMessages.allVotesUsed
+            : politeErrorMessages.alreadyVotedCategory;
+          socket.emit("voteError", message);
           return;
         }
 
-        console.log("On procède a l'enregistrement de son vote valide");
-        // 4. Enregistrement du vote
-        const vote = await prisma.votes.create({
-          data: {
-            influenceurId,
-            phoneNumber, // Stocké mais non utilisé pour la validation
-            isSpecial: isSpecialVote,
-            isValidated: true,
-            otp: otp,
-            otpExpiresAt: new Date(),
-            ipAddress: clientIp,
-            // deviceHash: deviceHash
-          },
-        });
+        // Enregistrement du vote avec timeout
+        const vote = await prisma.votes
+          .create({
+            data: {
+              influenceurId,
+              phoneNumber,
+              isSpecial: isSpecialVote,
+              isValidated: true,
+              otp: otp,
+              otpExpiresAt: new Date(),
+              ipAddress: clientIp,
+            },
+          })
+          .catch((err) => {
+            console.error("Erreur création vote:", err);
+            throw new Error("timeoutError");
+          });
 
-        console.log("On met a jout les resultat pour le emit");
-        // 5. Mise à jour des résultats
-        const voteCount = await prisma.votes.count({
-          where: { influenceurId, isValidated: true },
-        });
+        // Mise à jour des résultats
+        const voteCount = await prisma.votes
+          .count({
+            where: { influenceurId, isValidated: true },
+          })
+          .catch((err) => {
+            console.error("Erreur comptage votes:", err);
+            // On continue quand même même si le comptage échoue
+          });
 
         io.emit("voteUpdate", { influenceurId, newVoteCount: voteCount });
         socket.emit("voteSuccess", vote);
       } catch (error) {
         console.error("Erreur lors du vote:", error);
-        socket.emit("voteError", "Erreur lors de l'enregistrement du vote");
+
+        const errorMessage =
+          error.message === "timeoutError"
+            ? politeErrorMessages.timeoutError
+            : politeErrorMessages.databaseError;
+
+        socket.emit("voteError", "Votre participation est importante ! Le système est momentanément occupé. Merci de réessayer dans 2-3 minutes.");
       }
     }
   );
@@ -692,7 +708,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
     console.error("Erreur récupération résultats:", error);
     res.status(500).json({ error: "Erreur serveur" });
   } finally {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   }
 });
 
@@ -792,9 +808,8 @@ app.get("/api/influenceurs", async (req, res) => {
   } catch (error) {
     console.error("Erreur récupération influenceurs:", error);
     res.status(500).json({ error: "Erreur serveur" });
-  }
-  finally {
-    await prisma.$disconnect()
+  } finally {
+    await prisma.$disconnect();
   }
 });
 
