@@ -691,6 +691,8 @@ app.get("/api/results/:categoryId", async (req, res) => {
   } catch (error) {
     console.error("Erreur récupération résultats:", error);
     res.status(500).json({ error: "Erreur serveur" });
+  } finally {
+    await prisma.$disconnect()
   }
 });
 
@@ -790,6 +792,9 @@ app.get("/api/influenceurs", async (req, res) => {
   } catch (error) {
     console.error("Erreur récupération influenceurs:", error);
     res.status(500).json({ error: "Erreur serveur" });
+  }
+  finally {
+    await prisma.$disconnect()
   }
 });
 
