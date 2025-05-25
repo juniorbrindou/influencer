@@ -12,10 +12,6 @@ import { dirname } from "path";
 import twilio from "twilio";
 import { redisClient } from "./lib/redis.js";
 import requestIp from "request-ip";
-
-import Queue from "bull"
-const voteQueue = new Queue("votes", "redis://127.0.0.1:6379");
-
 dotenv.config();
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID,
@@ -101,37 +97,6 @@ app.use(
   })
 );
 app.use(express.json());
-
-// 🔒 Rate limiter basé sur l'IP (pour les routes API seulement)
-const ipRequestCounts = new Map();
-
-setInterval(() => {
-  ipRequestCounts.clear(); // reset chaque minute
-}, 60 * 1000);
-
-function rateLimiter(req, res, next) {
-  const ip = req.clientIp || req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-  const now = Date.now();
-  const info = ipRequestCounts.get(ip) || { count: 0, last: now };
-
-  if (now - info.last < 60 * 1000) {
-    info.count++;
-  } else {
-    info.count = 1;
-    info.last = now;
-  }
-
-  ipRequestCounts.set(ip, info);
-
-  if (info.count > 50) {
-    console.warn(`IP bloquée temporairement: ${ip}`);
-    return res.status(429).json({ error: "Trop de requêtes. Réessaye plus tard." });
-  }
-
-  next();
-}
-
-app.use("/api", rateLimiter); 
 
 // Configuration de Multer (remplacez la section existante)
 const storage = multer.diskStorage({
@@ -324,10 +289,12 @@ io.on("connection", (socket) => {
       } catch (error) {
         console.error("Erreur lors du vote:", error);
 
-        // socket.emit("voteError", errorMessage);
-        socket.emit("voteSuccess", vote);
+        const errorMessage =
+          error.message === "timeoutError"
+            ? politeErrorMessages.timeoutError
+            : politeErrorMessages.databaseError;
 
-        // socket.emit("voteError", "Votre participation est importante ! Le système est momentanément occupé. Merci de réessayer dans 2-3 minutes.");
+        socket.emit("voteError", "Votre participation est importante ! Le système est momentanément occupé. Merci de réessayer dans 2-3 minutes.");
       }
     }
   );
@@ -672,33 +639,9 @@ app.get("/api/results/:categoryId", async (req, res) => {
   try {
     // 1. Vérifier le cache
     const cachedResults = await redisClient.get(cacheKey);
-
-    // ce que je veux faire
-    const [[cached], dbResults] = await Promise.all([
-      redisClient.pipeline().get(cacheKey).ttl(cacheKey).exec(),
-      prisma.$queryRaw`SELECT ... FOR UPDATE SKIP LOCKED`, // Requête non bloquante
-
-      prisma.$queryRaw`
-        SELECT *
-        FROM "Vote"
-        WHERE "categoryId" = ${categoryId}
-          AND "isValidated" = true
-        FOR UPDATE SKIP LOCKED
-      `,
-    ]).timeout(5000); // Timeout après 5s
-
     if (cachedResults) {
-      console.log("récupération depuis le cache ");
+      console.log("resuperation depuis le cache ");
       return res.json(JSON.parse(cachedResults));
-    }else{
-      console.log("récupération depuis la base de données ");
-      await prisma.$queryRaw`
-        SELECT *
-        FROM "Vote"
-        WHERE "categoryId" = ${categoryId}
-          AND "isValidated" = true
-        FOR UPDATE SKIP LOCKED
-      `;
     }
 
     // 2. Si pas en cache, exécuter la requête normale
