@@ -50,45 +50,6 @@ const io = new Server(httpServer, {
 
 app.use(requestIp.mw());
 
-// Middleware de limitation de votes
-// const checkVoteLimits = async (req, res, next) => {
-//   const ip = req.clientIp;
-//   const deviceHash = req.headers["x-device-hash"] || "unknown";
-
-//   // Vérifier les votes récents pour cette IP
-//   const ipVoteCount = await prisma.votes.count({
-//     where: {
-//       ipAddress: ip,
-//       timestamp: {
-//         gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
-//       },
-//     },
-//   });
-
-//   if (ipVoteCount > 50) {
-//     // Limite de 50 votes par IP par jour
-//     return res
-//       .status(429)
-//       .json({ error: "Trop de votes depuis cette adresse IP" });
-//   }
-
-//   // Vérifier les votes pour cet appareil
-//   // const deviceVoteCount = await prisma.votes.count({
-//   //   where: {
-//   //     deviceHash,
-//   //     timestamp: {
-//   //       gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
-//   //     },
-//   //   },
-//   // });
-
-//   // if (deviceVoteCount > 3) {
-//   //   // Limite de 3 votes par appareil par jour
-//   //   return res.status(429).json({ error: "Trop de votes depuis cet appareil" });
-//   // }
-
-//   next();
-// };
 
 app.use(
   cors({
@@ -1009,6 +970,6 @@ app.put("/api/influenceurs/:id", async (req, res) => {
 
 // Démarrer le serveur HTTP (pas app.listen)
 const PORT = process.env.PORT || 4000;
-httpServer.listen(PORT, "localhost", () => {
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
