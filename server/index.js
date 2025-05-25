@@ -32,10 +32,10 @@ const httpServer = createServer(
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
-    origin: [
+   origin: [
       "http://localhost:5173",
       "https://influenceur2lannee.com",
-      "https://wwww.influenceur2lannee.com",
+      "https://www.influenceur2lannee.com"
     ],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
