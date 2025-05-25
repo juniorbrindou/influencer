@@ -92,7 +92,11 @@ app.use(requestIp.mw());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://influenceur2lannee.com", 
+      "https://www.influenceur2lannee.com"
+    ],
     credentials: true,
   })
 );
