@@ -44,8 +44,8 @@ const io = new Server(httpServer, {
   transports: ["websocket"],
   pingInterval: 10000, // Augmentez l'intervalle de ping
   pingTimeout: 5000, // Réduisez le timeout
-  maxHttpBufferSize: 1e5, // Limitez la taille des messages
-  serveClient: false, // Désactivez la livraison du client
+  // maxHttpBufferSize: 1e5, // Limitez la taille des messages
+  // serveClient: false, // Désactivez la livraison du client
 });
 
 app.use(requestIp.mw());
@@ -147,25 +147,23 @@ io.on("connection", (socket) => {
         console.log("clientIp: ", clientIp);
         console.log("ce vote est speciel-------------: ", isSpecialVote);
 
-        // Vérifier les limites de vote avec timeout
-        const ipVoteCount = await prisma.votes
-          .count({
-            where: {
-              ipAddress: clientIp,
-              timestamp: {
-                gte: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 heure
-              },
-            },
-          })
-          .catch((err) => {
-            console.error("Erreur vérification limite IP:", err);
-            throw new Error("timeoutError");
-          });
+        // Vérifier les limites de vote -------------------
+        // const ipVoteCount = await prisma.votes.count({
+        //   where: {
+        //     ipAddress: clientIp,
+        //     timestamp: {
+        //       gte: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 heures
+        //     },
+        //   },
+        // });
 
-        if (ipVoteCount >= 20) {
-          socket.emit("voteError", politeErrorMessages.rateLimit);
-          return;
-        }
+        // if (ipVoteCount >= 20) {
+        //   socket.emit(
+        //     "voteError",
+        //     "Trop de votes depuis cette adresse IP"
+        //   );
+        //   return;
+        // }
 
         // Récupérer l'influenceur avec timeout
         const influenceurWithCat = await prisma.influenceurs
@@ -666,7 +664,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
     };
 
     // 3. Mettre en cache pour 5 minutes
-    await redisClient.setEx(cacheKey, 30, JSON.stringify(results)); // 10 secondes de cache
+    await redisClient.setEx(cacheKey, 5 * 60, JSON.stringify(results)); // 5 minutes de cache
 
     res.json(results);
   } catch (error) {
