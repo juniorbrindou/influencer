@@ -22,7 +22,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
   useEffect(() => {
   const interval = setInterval(() => {
     fetchResults(categoryId);
-  }, 10000); // Toutes les 10 secondes
+  }, 1000 * 30); // Toutes les 30 secondes
 
   return () => clearInterval(interval);
 }, [categoryId, fetchResults]);
