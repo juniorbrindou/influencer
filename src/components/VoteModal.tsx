@@ -92,9 +92,9 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
       setIsRedirecting(false);
 
       // Redirection SEULEMENT si tout est OK
-      // if (shouldRedirect) {
+      if (shouldRedirect) {
         navigate('/confirmation');
-      // }
+      }
     }
   };
 

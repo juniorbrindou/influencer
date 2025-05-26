@@ -255,7 +255,7 @@ io.on("connection", (socket) => {
           stack: error.stack,
           data: { influenceurId, phoneNumber, isSpecialVote, otp },
         });
-        socket.emit("voteError", "Erreur technique détaillée");
+        socket.emit("voteError", "Non effectué, Veuillez réessayer plus tard.");
       }
     }
   );
