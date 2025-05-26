@@ -19,13 +19,13 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
     return 1; // Niveau de base
   };
 
-  useEffect(() => {
-  const interval = setInterval(() => {
-    fetchResults(categoryId);
-  }, 1000 * 30); // Toutes les 30 secondes
+//   useEffect(() => {
+//   const interval = setInterval(() => {
+//     fetchResults(categoryId);
+//   }, 1000 * 30); // Toutes les 30 secondes
 
-  return () => clearInterval(interval);
-}, [categoryId, fetchResults]);
+//   return () => clearInterval(interval);
+// }, [categoryId, fetchResults]);
 
   const styleLevel = getStyleLevel();
 
