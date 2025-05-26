@@ -13,12 +13,19 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
   const [displayedPercentages, setDisplayedPercentages] = useState<Record<string, number>>({});
   const prevResultsRef = useRef<ClassementData | null>(null);
 
-  // Détermine le niveau de style en fonction de la catégorie
   const getStyleLevel = () => {
     if (categoryName === "INFLUENCEUR2LANNEE") return 3; // Niveau maximum
     if (categoryName?.includes("SPECIAL") || categoryName?.includes("PREMIUM")) return 2;
     return 1; // Niveau de base
   };
+
+  useEffect(() => {
+  const interval = setInterval(() => {
+    fetchResults(categoryId);
+  }, 10000); // Toutes les 10 secondes
+
+  return () => clearInterval(interval);
+}, [categoryId, fetchResults]);
 
   const styleLevel = getStyleLevel();
 

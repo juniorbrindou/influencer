@@ -32,10 +32,10 @@ const httpServer = createServer(
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
-   origin: [
+    origin: [
       "http://localhost:5173",
       "https://influenceur2lannee.com",
-      "https://www.influenceur2lannee.com"
+      "https://www.influenceur2lannee.com",
     ],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
@@ -50,13 +50,12 @@ const io = new Server(httpServer, {
 
 app.use(requestIp.mw());
 
-
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://influenceur2lannee.com", 
-      "https://www.influenceur2lannee.com"
+      "https://influenceur2lannee.com",
+      "https://www.influenceur2lannee.com",
     ],
     credentials: true,
   })
@@ -137,6 +136,13 @@ io.on("connection", (socket) => {
           "Le système est temporairement occupé. Veuillez réessayer dans un moment.",
       };
 
+      console.log("📥 submitVote reçu:", {
+        influenceurId,
+        phoneNumber,
+        isSpecialVote,
+        otp,
+      });
+
       try {
         const deviceHash = socket.handshake.headers["x-device-hash"];
         const clientIp =
@@ -146,24 +152,6 @@ io.on("connection", (socket) => {
         console.log("deviceHash: ", deviceHash);
         console.log("clientIp: ", clientIp);
         console.log("ce vote est speciel-------------: ", isSpecialVote);
-
-        // Vérifier les limites de vote -------------------
-        // const ipVoteCount = await prisma.votes.count({
-        //   where: {
-        //     ipAddress: clientIp,
-        //     timestamp: {
-        //       gte: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 heures
-        //     },
-        //   },
-        // });
-
-        // if (ipVoteCount >= 20) {
-        //   socket.emit(
-        //     "voteError",
-        //     "Trop de votes depuis cette adresse IP"
-        //   );
-        //   return;
-        // }
 
         // Récupérer l'influenceur avec timeout
         const influenceurWithCat = await prisma.influenceurs
@@ -185,6 +173,7 @@ io.on("connection", (socket) => {
           .findMany({
             where: {
               otp: otp,
+              phoneNumber: phoneNumber,
               timestamp: { gte: today },
               influenceurs: {
                 categoryId: influenceurWithCat.categoryId,
@@ -247,17 +236,26 @@ io.on("connection", (socket) => {
             // On continue quand même même si le comptage échoue
           });
 
-        io.emit("voteUpdate", { influenceurId, newVoteCount: voteCount });
+        // io.emit("voteUpdate", { influenceurId, newVoteCount: voteCount });
+        io.emit("voteUpdate", {
+          influenceurId,
+          newVoteCount: voteCount,
+          categoryId: influenceurWithCat.categoryId,
+          forceRefresh: true, // Nouveau flag
+        });
+
         socket.emit("voteSuccess", vote);
+        console.log("📢 Émission voteUpdate:", {
+          influenceurId,
+          updatedVoteCount: voteCount,
+        });
       } catch (error) {
-        console.error("Erreur lors du vote:", error);
-
-        const errorMessage =
-          error.message === "timeoutError"
-            ? politeErrorMessages.timeoutError
-            : politeErrorMessages.databaseError;
-
-        socket.emit("voteError", "Votre participation est importante ! Le système est momentanément occupé. Merci de réessayer dans 2-3 minutes.");
+        console.error("❌ Erreur submitVote complète:", {
+          error: error.message,
+          stack: error.stack,
+          data: { influenceurId, phoneNumber, isSpecialVote, otp },
+        });
+        socket.emit("voteError", "Erreur technique détaillée");
       }
     }
   );
@@ -601,11 +599,11 @@ app.get("/api/results/:categoryId", async (req, res) => {
 
   try {
     // 1. Vérifier le cache
-    const cachedResults = await redisClient.get(cacheKey);
-    if (cachedResults) {
-      console.log("resuperation depuis le cache ");
-      return res.json(JSON.parse(cachedResults));
-    }
+    // const cachedResults = await redisClient.get(cacheKey);
+    // if (cachedResults) {
+    //   console.log("resuperation depuis le cache ");
+    //   return res.json(JSON.parse(cachedResults));
+    // }
 
     // 2. Si pas en cache, exécuter la requête normale
     const specialCategory = await prisma.category.findFirst({
@@ -662,9 +660,6 @@ app.get("/api/results/:categoryId", async (req, res) => {
       totalVotes,
       isSpecialCategory,
     };
-
-    // 3. Mettre en cache pour 5 minutes
-    await redisClient.setEx(cacheKey, 5 * 60, JSON.stringify(results)); // 5 minutes de cache
 
     res.json(results);
   } catch (error) {
