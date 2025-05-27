@@ -41,11 +41,18 @@ const io = new Server(httpServer, {
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   },
-  transports: ["websocket"],
-  pingInterval: 10000, // Augmentez l'intervalle de ping
-  pingTimeout: 5000, // Réduisez le timeout
-  // maxHttpBufferSize: 1e5, // Limitez la taille des messages
-  // serveClient: false, // Désactivez la livraison du client
+  transports: ["websocket", "polling"], // Ajout du polling en fallback
+  pingInterval: 25000, // Ping toutes les 25 secondes
+  pingTimeout: 20000,  // Timeout après 20 secondes
+  maxHttpBufferSize: 1e6,
+  allowEIO3: true, // Compatibilité avec les anciennes versions
+  // Nouvelles options pour gérer les connexions
+  connectTimeout: 45000,
+  forceNew: false,
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 5,
+  timeout: 20000,
 });
 
 app.use(requestIp.mw());
@@ -143,9 +150,90 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
   res.json({ imageUrl });
 });
 
+
+// Gestion améliorée des connexions
+const activeConnections = new Map();
+
+
 // Socket.IO connection handling
 io.on("connection", (socket) => {
   console.log("Client connecté:", socket.id);
+
+  // -----------------------------------------------
+
+    // Enregistrer la connexion active
+  activeConnections.set(socket.id, {
+    socket,
+    connectedAt: new Date(),
+    lastActivity: new Date(),
+  });
+
+   // Heartbeat pour maintenir la connexion
+  const heartbeatInterval = setInterval(() => {
+    if (socket.connected) {
+      socket.emit('ping');
+      activeConnections.get(socket.id).lastActivity = new Date();
+    } else {
+      clearInterval(heartbeatInterval);
+    }
+  }, 30000);
+
+
+  // Réponse au pong du client
+  socket.on('pong', () => {
+    if (activeConnections.has(socket.id)) {
+      activeConnections.get(socket.id).lastActivity = new Date();
+    }
+  });
+
+  // Gestion des erreurs de connexion
+  socket.on('error', (error) => {
+    console.error(`❌ Erreur socket ${socket.id}:`, error);
+    cleanupConnection(socket.id, heartbeatInterval);
+  });
+
+  // Gestion des erreurs de connexion
+  socket.on('error', (error) => {
+    console.error(`❌ Erreur socket ${socket.id}:`, error);
+    cleanupConnection(socket.id, heartbeatInterval);
+  });
+
+  // Gestion de la déconnexion
+  socket.on('disconnect', (reason) => {
+    console.log(`🔌 Client déconnecté: ${socket.id}, raison: ${reason}`);
+    cleanupConnection(socket.id, heartbeatInterval);
+  });
+
+  // Gestion de la déconnexion forcée
+  socket.on('disconnecting', (reason) => {
+    console.log(`🔌 Client en cours de déconnexion: ${socket.id}, raison: ${reason}`);
+  });
+
+  // Fonction de nettoyage
+  function cleanupConnection(socketId, interval) {
+    if (interval) {
+      clearInterval(interval);
+    }
+    activeConnections.delete(socketId);
+    
+    // Forcer la fermeture si nécessaire
+    if (socket && socket.connected) {
+      socket.disconnect(true);
+    }
+  }
+
+  // Timeout pour les connexions inactives (30 minutes)
+  const inactivityTimeout = setTimeout(() => {
+    console.log(`⏱️ Déconnexion pour inactivité: ${socket.id}`);
+    socket.disconnect(true);
+  }, 30 * 60 * 1000);
+
+  // Nettoyer le timeout à la déconnexion
+  socket.on('disconnect', () => {
+    clearTimeout(inactivityTimeout);
+  });
+
+  // -----------------------------------------------
 
   /**
    * Route pour enregistrer un vote
@@ -597,11 +685,80 @@ io.on("connection", (socket) => {
       socket.emit("influenceurError", "Erreur lors de la mise à jour");
     }
   });
+});
 
-  socket.on("disconnect", () => {
-    console.log("Client déconnecté:", socket.id);
+
+
+// Nettoyage périodique des connexions mortes
+setInterval(() => {
+  const now = new Date();
+  const staleConnections = [];
+  
+  activeConnections.forEach((conn, socketId) => {
+    const timeSinceLastActivity = now.getTime() - conn.lastActivity.getTime();
+    
+    // Si pas d'activité depuis 5 minutes et socket pas connecté
+    if (timeSinceLastActivity > 5 * 60 * 1000 && !conn.socket.connected) {
+      staleConnections.push(socketId);
+    }
+  });
+  
+  staleConnections.forEach(socketId => {
+    console.log(`🧹 Nettoyage connexion stagnante: ${socketId}`);
+    const conn = activeConnections.get(socketId);
+    if (conn && conn.socket) {
+      conn.socket.disconnect(true);
+    }
+    activeConnections.delete(socketId);
+  });
+  
+  if (staleConnections.length > 0) {
+    console.log(`🧹 ${staleConnections.length} connexions nettoyées`);
+  }
+}, 2 * 60 * 1000); // Toutes les 2 minutes
+
+
+
+// Gestion gracieuse de l'arrêt du serveur
+process.on('SIGTERM', () => {
+  console.log('📴 Arrêt gracieux du serveur...');
+  
+  // Fermer toutes les connexions Socket.IO
+  activeConnections.forEach((conn, socketId) => {
+    if (conn.socket && conn.socket.connected) {
+      conn.socket.disconnect(true);
+    }
+  });
+  
+  // Fermer le serveur Socket.IO
+  io.close(() => {
+    console.log('✅ Socket.IO fermé');
+    process.exit(0);
   });
 });
+
+
+process.on('SIGINT', () => {
+  console.log('📴 Interruption reçue, arrêt du serveur...');
+  
+  // Même logique que SIGTERM
+  activeConnections.forEach((conn, socketId) => {
+    if (conn.socket && conn.socket.connected) {
+      conn.socket.disconnect(true);
+    }
+  });
+  
+  io.close(() => {
+    console.log('✅ Socket.IO fermé');
+    process.exit(0);
+  });
+});
+
+// Monitoring des connexions
+setInterval(() => {
+  console.log(`📊 Connexions actives: ${activeConnections.size}`);
+}, 5 * 60 * 1000); // Toutes les 5 minutes
+
 
 app.get("/api/votes", async (_req, res) => {
   try {
