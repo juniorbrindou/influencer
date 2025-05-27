@@ -5,13 +5,13 @@ import { UserSeeder } from './seeders/UserSeeder.js';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🚀 Démarrage du seeding...');
+  // console.log('🚀 Démarrage du seeding...');
 
   // await InfluenceurSeeder();
   // await UserSeeder();
 //   await seedVotes();
 
-  console.log('✅ Seeding terminé !');
+  // console.log('✅ Seeding terminé !');
 }
 
 main()

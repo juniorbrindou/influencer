@@ -87,6 +87,40 @@ app.use(
 
 const upload = multer({ storage });
 
+// Cache en mémoire pour les résultats en temps réel
+let liveVoteCache = new Map(); // { influenceurId: { voteCount, categoryId, lastUpdate } }
+
+// Fonction pour initialiser le cache depuis la DB (à appeler au démarrage)
+async function initializeVoteCache() {
+  try {
+    console.log("🚀 Initialisation du cache des votes...");
+
+    const influenceurs = await prisma.influenceurs.findMany({
+      include: {
+        _count: {
+          select: {
+            votes: {
+              where: { isValidated: true },
+            },
+          },
+        },
+      },
+    });
+
+    influenceurs.forEach((inf) => {
+      liveVoteCache.set(inf.id, {
+        voteCount: inf._count.votes,
+        categoryId: inf.categoryId,
+        lastUpdate: new Date(),
+      });
+    });
+
+    console.log(`✅ Cache initialisé avec ${liveVoteCache.size} influenceurs`);
+  } catch (error) {
+    console.error("❌ Erreur initialisation cache:", error);
+  }
+}
+
 // Middleware pour servir les fichiers statiques
 
 // Route d'upload
@@ -116,6 +150,7 @@ io.on("connection", (socket) => {
   // WebSocket event for submitting a vote
   // Modifiez la partie "submitVote" comme suit :
 
+  // Handler de vote optimisé
   socket.on(
     "submitVote",
     async ({ influenceurId, phoneNumber, isSpecialVote, otp }) => {
@@ -149,26 +184,31 @@ io.on("connection", (socket) => {
           socket.request.headers["x-forwarded-for"] ||
           socket.request.connection.remoteAddress;
 
-        console.log("deviceHash: ", deviceHash);
-        console.log("clientIp: ", clientIp);
-        console.log("ce vote est speciel-------------: ", isSpecialVote);
-
-        // Récupérer l'influenceur avec timeout
+        // Récupérer l'influenceur avec timeout (optimisé - seulement les infos nécessaires)
         const influenceurWithCat = await prisma.influenceurs
           .findUnique({
             where: { id: influenceurId },
-            include: { category: true },
+            select: {
+              id: true,
+              categoryId: true,
+              category: { select: { id: true, name: true } },
+            },
           })
           .catch((err) => {
             console.error("Erreur récupération influenceur:", err);
             throw new Error("timeoutError");
           });
 
+        if (!influenceurWithCat) {
+          socket.emit("voteError", "Influenceur non trouvé");
+          return;
+        }
+
         // Date du jour à minuit
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Vérification des votes existants avec timeout
+        // Vérification des votes existants (optimisée - seulement les champs nécessaires)
         const existingVotes = await prisma.votes
           .findMany({
             where: {
@@ -180,14 +220,22 @@ io.on("connection", (socket) => {
               },
               isValidated: true,
             },
-            include: { influenceurs: { include: { category: true } } },
+            select: {
+              id: true,
+              isSpecial: true,
+              influenceurs: {
+                select: {
+                  category: { select: { name: true } },
+                },
+              },
+            },
           })
           .catch((err) => {
             console.error("Erreur vérification votes existants:", err);
             throw new Error("timeoutError");
           });
 
-        // Logique de validation
+        // Logique de validation (inchangée)
         const hasNormalVote = existingVotes.some((v) => !v.isSpecial);
         const hasSpecialVote = existingVotes.some((v) => v.isSpecial);
 
@@ -208,7 +256,7 @@ io.on("connection", (socket) => {
           return;
         }
 
-        // Enregistrement du vote avec timeout
+        // Enregistrement du vote (inchangé)
         const vote = await prisma.votes
           .create({
             data: {
@@ -226,29 +274,59 @@ io.on("connection", (socket) => {
             throw new Error("timeoutError");
           });
 
-        // Mise à jour des résultats
-        const voteCount = await prisma.votes
-          .count({
+        // 🚀 OPTIMISATION PRINCIPALE : Mise à jour du cache au lieu d'une requête DB
+        let newVoteCount;
+        const cachedData = liveVoteCache.get(influenceurId);
+
+        if (cachedData) {
+          // Incrémenter directement le cache
+          cachedData.voteCount += 1;
+          cachedData.lastUpdate = new Date();
+          newVoteCount = cachedData.voteCount;
+
+          console.log(
+            `📊 Cache mis à jour pour ${influenceurId}: ${newVoteCount} votes`
+          );
+        } else {
+          // Si pas en cache, faire une requête et mettre en cache
+          newVoteCount = await prisma.votes.count({
             where: { influenceurId, isValidated: true },
-          })
-          .catch((err) => {
-            console.error("Erreur comptage votes:", err);
-            // On continue quand même même si le comptage échoue
           });
 
-        // io.emit("voteUpdate", { influenceurId, newVoteCount: voteCount });
+          liveVoteCache.set(influenceurId, {
+            voteCount: newVoteCount,
+            categoryId: influenceurWithCat.categoryId,
+            lastUpdate: new Date(),
+          });
+
+          console.log(
+            `📊 Nouveau cache créé pour ${influenceurId}: ${newVoteCount} votes`
+          );
+        }
+
+        // Émettre la mise à jour optimisée avec flag increment
         io.emit("voteUpdate", {
           influenceurId,
-          newVoteCount: voteCount,
+          newVoteCount: newVoteCount,
           categoryId: influenceurWithCat.categoryId,
-          forceRefresh: true, // Nouveau flag
+          increment: true, // Flag pour indiquer qu'c'est un incrément
+          timestamp: new Date().toISOString(),
         });
 
         socket.emit("voteSuccess", vote);
-        console.log("📢 Émission voteUpdate:", {
+
+        console.log("📢 Émission voteUpdate optimisée:", {
           influenceurId,
-          updatedVoteCount: voteCount,
+          newVoteCount,
+          categoryId: influenceurWithCat.categoryId,
+          increment: true,
         });
+
+        // Synchronisation périodique avec la DB (optionnel, pour sécurité)
+        // Seulement tous les 100 votes ou toutes les heures
+        if (newVoteCount % 100 === 0) {
+          setTimeout(() => syncCacheWithDB(influenceurId), 1000);
+        }
       } catch (error) {
         console.error("❌ Erreur submitVote complète:", {
           error: error.message,
@@ -403,66 +481,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  /**
-   * Route pour valider un vote avec OTP
-   * @route POST /api/validate
-   * @param {string} phoneNumber - Numéro de téléphone de l'utilisateur
-   * @param {string} otp - Code OTP
-   * @returns {object} - Détails du vote validé
-   * @throws {400} - Si le numéro de téléphone ou l'OTP est manquant
-   * @throws {500} - Erreur serveur lors de la validation du vote
-   */
-  socket.on("validateOTP", async ({ phoneNumber, otp }) => {
-    try {
-      const vote = await prisma.votes.findFirst({
-        where: {
-          phoneNumber,
-          otp,
-          isValidated: false,
-          otpExpiresAt: { gte: new Date() },
-        },
-        include: {
-          influenceurs: true, // Simplifié car vous n'utilisez pas category dans l'émission
-        },
-      });
-
-      if (!vote) {
-        socket.emit("validateError", "OTP invalide ou expiré");
-        return;
-      }
-
-      // 1. Marquer comme validé
-      await prisma.votes.update({
-        where: { id: vote.id },
-        data: { isValidated: true },
-      });
-
-      // 2. Calculer le nouveau nombre de votes
-      const newVoteCount = await prisma.votes.count({
-        where: {
-          influenceurId: vote.influenceurs.id,
-          isValidated: true,
-        },
-      });
-
-      // 3. Émettre avec le format attendu par le frontend
-      io.emit("voteUpdate", {
-        influenceurId: vote.influenceurs.id,
-        newVoteCount, // Maintenant présent !
-      });
-
-      console.log("------validateOTP ---->>>>> voteUpdate");
-      console.log("📢 Émission Socket.IO : voteUpdate", {
-        influenceurId: vote.influenceurs.id,
-        newVoteCount,
-      });
-
-      socket.emit("validateSuccess");
-    } catch (error) {
-      socket.emit("validateError", "Erreur serveur");
-    }
-  });
-
   socket.on("addCategory", async ({ name, imageUrl }) => {
     try {
       const category = await prisma.category.create({
@@ -593,24 +611,20 @@ app.delete("/api/votes/:id", async (req, res) => {
   }
 });
 
+// Nouvelle route résultats optimisée pour WebSocket (sans cache, incrémentation côté serveur)
+let liveResults = {}; // { [categoryId]: { influenceurs: [...], totalVotes, isSpecialCategory } }
+
+// Route optimisée pour les résultats
 app.get("/api/results/:categoryId", async (req, res) => {
   const { categoryId } = req.params;
-  const cacheKey = `results:${categoryId}`;
 
   try {
-    // 1. Vérifier le cache
-    // const cachedResults = await redisClient.get(cacheKey);
-    // if (cachedResults) {
-    //   console.log("resuperation depuis le cache ");
-    //   return res.json(JSON.parse(cachedResults));
-    // }
-
-    // 2. Si pas en cache, exécuter la requête normale
     const specialCategory = await prisma.category.findFirst({
       where: { name: "INFLUENCEUR2LANNEE" },
+      select: { id: true },
     });
 
-    // Récupérer les influenceurs avec leurs votes
+    // Récupérer les influenceurs (sans les votes pour optimiser)
     const influenceurs = await prisma.influenceurs.findMany({
       where: {
         OR: [
@@ -618,22 +632,35 @@ app.get("/api/results/:categoryId", async (req, res) => {
           ...(categoryId === specialCategory?.id ? [{ isMain: true }] : []),
         ],
       },
-      include: {
-        votes: {
-          where: { isValidated: true },
-          select: { id: true, isSpecial: true },
-        },
-        category: true,
+      select: {
+        id: true,
+        name: true,
+        imageUrl: true,
+        isMain: true,
+        categoryId: true,
       },
     });
 
-    // Calculer les totaux et formater les données
     const isSpecialCategory = categoryId === specialCategory?.id;
 
+    // Utiliser le cache pour les votes au lieu de requêtes DB
     const formattedResults = influenceurs.map((inf) => {
-      const voteCount = isSpecialCategory
-        ? inf.votes.filter((v) => v.isSpecial).length
-        : inf.votes.filter((v) => !v.isSpecial).length;
+      const cachedData = liveVoteCache.get(inf.id);
+      let voteCount = 0;
+
+      if (cachedData) {
+        // Utiliser le cache
+        voteCount = isSpecialCategory
+          ? cachedData.specialVoteCount || 0
+          : cachedData.voteCount || 0;
+      } else {
+        // Si pas en cache, initialiser à 0 (sera mis à jour au prochain vote)
+        liveVoteCache.set(inf.id, {
+          voteCount: 0,
+          categoryId: inf.categoryId,
+          lastUpdate: new Date(),
+        });
+      }
 
       return {
         id: inf.id,
@@ -644,13 +671,10 @@ app.get("/api/results/:categoryId", async (req, res) => {
       };
     });
 
-    // Calculer le total des votes pour la catégorie
     const totalVotes = formattedResults.reduce(
       (sum, inf) => sum + inf.voteCount,
       0
     );
-
-    // Trier par nombre de votes décroissant
     const sortedResults = formattedResults.sort(
       (a, b) => b.voteCount - a.voteCount
     );
@@ -665,10 +689,63 @@ app.get("/api/results/:categoryId", async (req, res) => {
   } catch (error) {
     console.error("Erreur récupération résultats:", error);
     res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    await prisma.$disconnect();
   }
 });
+
+// fonction données par claude
+
+// Fonction de nettoyage du cache (à appeler périodiquement)
+function cleanupCache() {
+  const now = new Date();
+  const oneHour = 60 * 60 * 1000;
+
+  for (const [influenceurId, data] of liveVoteCache.entries()) {
+    if (now.getTime() - data.lastUpdate.getTime() > oneHour) {
+      // Synchroniser avec la DB avant de nettoyer
+      syncCacheWithDB(influenceurId);
+    }
+  }
+}
+
+// Nettoyage périodique du cache (toutes les heures)
+setInterval(cleanupCache, 60 * 60 * 1000);
+
+// Initialiser le cache au démarrage du serveur
+initializeVoteCache();
+
+// fin claude function
+
+// Incrémentation live via WebSocket (à placer dans le handler "submitVote")
+function incrementLiveResults({ influenceurId, categoryId, isSpecial }) {
+  if (!liveResults[categoryId]) return;
+  const resObj = liveResults[categoryId];
+  const idx = resObj.influenceurs.findIndex((inf) => inf.id === influenceurId);
+  if (idx !== -1) {
+    // Vérifier si on doit incrémenter selon la catégorie spéciale ou non
+    if (
+      (resObj.isSpecialCategory && isSpecial) ||
+      (!resObj.isSpecialCategory && !isSpecial)
+    ) {
+      resObj.influenceurs[idx].voteCount += 1;
+      resObj.totalVotes += 1;
+      // Re-trier
+      resObj.influenceurs.sort((a, b) => b.voteCount - a.voteCount);
+    }
+  }
+}
+
+// À placer dans le handler "submitVote" après la création du vote validé
+// incrementLiveResults({ influenceurId, categoryId, isSpecial });
+
+/*
+Exemple d'utilisation dans le handler existant :
+Après avoir validé le vote et émis "voteUpdate", ajoutez :
+incrementLiveResults({
+  influenceurId,
+  categoryId: influenceurWithCat.categoryId,
+  isSpecial: isSpecialVote
+});
+*/
 
 // Routes pour les catégories
 app.get("/api/categories", async (_req, res) => {
@@ -710,11 +787,13 @@ app.post("/api/categories", async (req, res) => {
     // Émettre l'événement Socket.IO pour la mise à jour en temps réel
     io.emit("categoriesUpdate", { newCategory: category });
 
-    await redisClient.publish('categories', JSON.stringify({
-      event: 'categoriesUpdate',
-      data: { newCategory: category }
-    }));
-
+    await redisClient.publish(
+      "categories",
+      JSON.stringify({
+        event: "categoriesUpdate",
+        data: { newCategory: category },
+      })
+    );
 
     res.json(category);
   } catch (error) {
@@ -754,7 +833,6 @@ app.get("/api/influenceurs", async (_req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
 
 /**
  * Route pour Supprimer un influenceur

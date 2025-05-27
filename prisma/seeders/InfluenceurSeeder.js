@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  await InfluenceurSeeder();
+  // await InfluenceurSeeder();
 }
 
 export async function InfluenceurSeeder() {

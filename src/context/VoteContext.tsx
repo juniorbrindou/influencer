@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { Category, ClassementData, Influenceur, Vote } from '../types';
 import * as FingerprintJS from "@fingerprintjs/fingerprintjs";
+import { Socket } from 'socket.io-client';
 
 
 interface VoteContextType {
@@ -13,7 +14,6 @@ interface VoteContextType {
   selectInfluenceur: (influenceur: Influenceur) => void;
   submitVote: (influenceur: Influenceur, phoneNumber: string) => Promise<void>;
   requestOTP: (influenceur: Influenceur, phoneNumber: string) => Promise<boolean>;
-  validateOTP: (otp: string) => Promise<void>;
   resetSelection: () => void;
   addInfluenceur: (influenceur: Influenceur) => Promise<void>;
   removeInfluenceur: (id: string) => Promise<void>;
@@ -33,6 +33,7 @@ interface VoteContextType {
   setOfferSecondVote: (val: boolean) => void;
   specialVote: boolean;
   setSpecialVote: (val: boolean) => void;
+   socket: Socket;
   fetchResults: (categoryId: string) => Promise<ClassementData>
 }
 
@@ -545,39 +546,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  /**
-   * Fonction pour valider le code OTP via socket.io
-   * @param {string} otp - Le code OTP à valider
-   * @returns {Promise<void>}
-   * @throws {Error} Si la requête échoue
-   */
-  const validateOTP = async (otp: string): Promise<void> => {
-    if (!otp || !selectedInfluenceur || !phoneNumber) {
-      setError("Tous les champs sont requis pour valider le vote.");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
-
-      socket.emit("validateOTP", {
-        influenceurId: selectedInfluenceur.id,
-        phoneNumber: fullPhoneNumber,
-        otp,
-        isSpecialVote: specialVote // Ajoutez ceci
-      });
-
-    } catch (error) {
-      setIsLoading(false);
-      console.error('Erreur lors de la validation de l\'OTP:', error);
-      setError('Erreur lors de la validation de l\'OTP');
-      throw error;
-    }
-  };
-
 
   /**
    * Recuperer les utilisateurs de maniere filtrée et rangée pour la partie classement
@@ -616,10 +584,10 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedInfluenceur,
         phoneNumber,
         setPhoneNumber,
+        socket,
         selectInfluenceur,
         submitVote,
         requestOTP,
-        validateOTP,
         resetSelection,
         addInfluenceur,
         removeInfluenceur,

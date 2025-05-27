@@ -3,9 +3,9 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🚀 Démarrage de UserSeeder...");
-  await UserSeeder();
-  console.log("✅ Seeding de UserSeeder terminé !");
+  // console.log("🚀 Démarrage de UserSeeder...");
+  // await UserSeeder();
+  // console.log("✅ Seeding de UserSeeder terminé !");
 }
 
 
