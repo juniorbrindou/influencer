@@ -64,7 +64,7 @@ app.use(express.json());
 
 // Configuration de Multer (remplacez la section existante)
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (_req, _file, cb) => {
     const uploadDir = path.isAbsolute(process.env.UPLOAD_DIR)
       ? process.env.UPLOAD_DIR
       : path.join(process.cwd(), process.env.UPLOAD_DIR);
@@ -72,7 +72,7 @@ const storage = multer.diskStorage({
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9) + ext;
     cb(null, uniqueName);
@@ -563,7 +563,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/api/votes", async (req, res) => {
+app.get("/api/votes", async (_req, res) => {
   try {
     const votes = await prisma.votes.findMany({
       orderBy: { timestamp: "desc" },
@@ -671,10 +671,22 @@ app.get("/api/results/:categoryId", async (req, res) => {
 });
 
 // Routes pour les catégories
-app.get("/api/categories", async (req, res) => {
+app.get("/api/categories", async (_req, res) => {
   try {
+    const cacheKey = "categories:all";
+    // Vérifier le cache Redis (30 minutes = 1800 secondes)
+    const cachedCategories = await redisClient.get(cacheKey);
+    if (cachedCategories) {
+      console.log("Récupération des catégories depuis le cache Redis");
+      return res.json(JSON.parse(cachedCategories));
+    }
+
+    // Si pas en cache, récupérer depuis la base de données
     const categories = await prisma.category.findMany();
     res.json(categories);
+
+    // Mettre en cache pour 30 minutes
+    await redisClient.setEx(cacheKey, 1800, JSON.stringify(categories));
   } catch (error) {
     res
       .status(500)
@@ -698,6 +710,12 @@ app.post("/api/categories", async (req, res) => {
     // Émettre l'événement Socket.IO pour la mise à jour en temps réel
     io.emit("categoriesUpdate", { newCategory: category });
 
+    await redisClient.publish('categories', JSON.stringify({
+      event: 'categoriesUpdate',
+      data: { newCategory: category }
+    }));
+
+
     res.json(category);
   } catch (error) {
     res
@@ -707,69 +725,36 @@ app.post("/api/categories", async (req, res) => {
 });
 
 // Routes pour les influenceurs
-app.get("/api/influenceurs", async (req, res) => {
+// Route pour récupérer tous les influenceurs avec leur nombre de votes validés
+app.get("/api/influenceurs", async (_req, res) => {
   try {
+    // Récupérer tous les influenceurs et leurs votes validés
     const influenceurs = await prisma.influenceurs.findMany({
       include: {
         votes: {
-          where: { isValidated: true },
-          select: { id: true },
+          where: { isValidated: true }, // On ne compte que les votes validés
+          select: { id: true }, // On ne récupère que l'id pour compter
         },
       },
     });
 
-    const formattedInfluenceurs = influenceurs.map((inf) => ({
-      id: inf.id,
-      name: inf.name,
-      imageUrl: inf.imageUrl,
-      isMain: inf.isMain,
-      categoryId: inf.categoryId, // Assurez-vous que cette propriété est incluse
-      voteCount: inf.votes ? inf.votes.length : 0,
-    }));
-
-    res.json(formattedInfluenceurs);
-  } catch (error) {
-    console.error("Erreur récupération influenceurs:", error);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
-
-app.get("/api/influenceurs", async (req, res) => {
-  try {
-    const { categoryId } = req.query;
-
-    const where = {};
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-
-    const influenceurs = await prisma.influenceurs.findMany({
-      where,
-      include: {
-        votes: {
-          where: { isValidated: true },
-          select: { id: true },
-        },
-      },
-    });
-
+    // Formater la réponse pour inclure le nombre de votes
     const formattedInfluenceurs = influenceurs.map((inf) => ({
       id: inf.id,
       name: inf.name,
       imageUrl: inf.imageUrl,
       isMain: inf.isMain,
       categoryId: inf.categoryId,
-      voteCount: inf.votes ? inf.votes.length : 0,
+      voteCount: inf.votes ? inf.votes.length : 0, // Calcul du nombre de votes validés
     }));
 
     res.json(formattedInfluenceurs);
   } catch (error) {
     console.error("Erreur récupération influenceurs:", error);
     res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    await prisma.$disconnect();
   }
 });
+
 
 /**
  * Route pour Supprimer un influenceur
