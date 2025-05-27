@@ -213,7 +213,6 @@ io.on("connection", (socket) => {
           .findMany({
             where: {
               otp: otp,
-              phoneNumber: phoneNumber,
               timestamp: { gte: today },
               influenceurs: {
                 categoryId: influenceurWithCat.categoryId,
