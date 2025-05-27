@@ -164,7 +164,7 @@ io.on("connection", (socket) => {
         allVotesUsed:
           "Vous avez épuisé tous vos votes pour aujourd'hui. Merci de revenir demain.",
         alreadyVotedCategory:
-          "Vous avez déjà voté dans cette catégorie aujourd'hui. Merci de revenir demain.",
+          "Vous avez déjà voté dans cette catégorie aujourd'hui à partir de ce terminal. Merci de revenir demain.",
         databaseError:
           "Désolé, un problème technique est survenu. Veuillez réessayer dans quelques instants.",
         timeoutError:
