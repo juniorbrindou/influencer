@@ -100,20 +100,30 @@ async function initializeVoteCache() {
         _count: {
           select: {
             votes: {
-              where: { isValidated: true },
+              where: { isValidated: true, isSpecial: false }, // Votes normaux
             },
           },
         },
       },
     });
 
-    influenceurs.forEach((inf) => {
+    // Récupérer séparément les votes spéciaux
+    for (const inf of influenceurs) {
+      const specialVoteCount = await prisma.votes.count({
+        where: {
+          influenceurId: inf.id,
+          isValidated: true,
+          isSpecial: true,
+        },
+      });
+
       liveVoteCache.set(inf.id, {
-        voteCount: inf._count.votes,
+        normalVoteCount: inf._count.votes,
+        specialVoteCount: specialVoteCount,
         categoryId: inf.categoryId,
         lastUpdate: new Date(),
       });
-    });
+    }
 
     console.log(`✅ Cache initialisé avec ${liveVoteCache.size} influenceurs`);
   } catch (error) {
@@ -278,28 +288,41 @@ io.on("connection", (socket) => {
         const cachedData = liveVoteCache.get(influenceurId);
 
         if (cachedData) {
-          // Incrémenter directement le cache
-          cachedData.voteCount += 1;
+          // Incrémenter le bon type de vote dans le cache
+          if (isSpecialVote) {
+            cachedData.specialVoteCount += 1;
+            newVoteCount = cachedData.specialVoteCount;
+          } else {
+            cachedData.normalVoteCount += 1;
+            newVoteCount = cachedData.normalVoteCount;
+          }
           cachedData.lastUpdate = new Date();
-          newVoteCount = cachedData.voteCount;
 
           console.log(
-            `📊 Cache mis à jour pour ${influenceurId}: ${newVoteCount} votes`
+            `📊 Cache mis à jour pour ${influenceurId}: ${newVoteCount} votes ${
+              isSpecialVote ? "spéciaux" : "normaux"
+            }`
           );
         } else {
           // Si pas en cache, faire une requête et mettre en cache
-          newVoteCount = await prisma.votes.count({
-            where: { influenceurId, isValidated: true },
+          const normalCount = await prisma.votes.count({
+            where: { influenceurId, isValidated: true, isSpecial: false },
+          });
+
+          const specialCount = await prisma.votes.count({
+            where: { influenceurId, isValidated: true, isSpecial: true },
           });
 
           liveVoteCache.set(influenceurId, {
-            voteCount: newVoteCount,
+            normalVoteCount: normalCount,
+            specialVoteCount: specialCount,
             categoryId: influenceurWithCat.categoryId,
             lastUpdate: new Date(),
           });
 
+          newVoteCount = isSpecialVote ? specialCount : normalCount;
           console.log(
-            `📊 Nouveau cache créé pour ${influenceurId}: ${newVoteCount} votes`
+            `📊 Nouveau cache créé pour ${influenceurId}: normal=${normalCount}, spécial=${specialCount}`
           );
         }
 
@@ -648,14 +671,15 @@ app.get("/api/results/:categoryId", async (req, res) => {
       let voteCount = 0;
 
       if (cachedData) {
-        // Utiliser le cache
-        voteCount = isSpecialCategory
+        // CORRECTION PRINCIPALE : Utiliser le bon type de vote selon la catégorie
+        voteCount = isSpecialCategory 
           ? cachedData.specialVoteCount || 0
-          : cachedData.voteCount || 0;
+          : cachedData.normalVoteCount || 0;
       } else {
         // Si pas en cache, initialiser à 0 (sera mis à jour au prochain vote)
         liveVoteCache.set(inf.id, {
-          voteCount: 0,
+          normalVoteCount: 0,
+          specialVoteCount: 0,
           categoryId: inf.categoryId,
           lastUpdate: new Date(),
         });
@@ -703,6 +727,29 @@ function cleanupCache() {
       // Synchroniser avec la DB avant de nettoyer
       syncCacheWithDB(influenceurId);
     }
+  }
+}
+
+async function syncCacheWithDB(influenceurId) {
+  try {
+    const normalCount = await prisma.votes.count({
+      where: { influenceurId, isValidated: true, isSpecial: false },
+    });
+    
+    const specialCount = await prisma.votes.count({
+      where: { influenceurId, isValidated: true, isSpecial: true },
+    });
+
+    const cachedData = liveVoteCache.get(influenceurId);
+    if (cachedData) {
+      cachedData.normalVoteCount = normalCount;
+      cachedData.specialVoteCount = specialCount;
+      cachedData.lastUpdate = new Date();
+      
+      console.log(`🔄 Synchronisation cache DB pour ${influenceurId}: normal=${normalCount}, spécial=${specialCount}`);
+    }
+  } catch (error) {
+    console.error(`❌ Erreur sync cache DB pour ${influenceurId}:`, error);
   }
 }
 
