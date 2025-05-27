@@ -212,7 +212,10 @@ io.on("connection", (socket) => {
         const existingVotes = await prisma.votes
           .findMany({
             where: {
-              otp: otp,
+              OR: [
+                { otp: otp }, // Condition 1 : otp correspond
+                { phoneNumber: phoneNumber }, // Condition 2 : phoneNumber correspond
+              ],
               timestamp: { gte: today },
               influenceurs: {
                 categoryId: influenceurWithCat.categoryId,

@@ -34,7 +34,7 @@ export const useSocket = ({
 
     socket.on('connect_error', (error) => {
       console.error('❌ Erreur Socket.IO:', error);
-      setError(`Erreur de connexion: ${error.message}`);
+      setError(`Vous êtes déconnecté du serveur. Patientez quelques secondes et rechargez la page.`);
     });
 
     socket.on('disconnect', () => {
