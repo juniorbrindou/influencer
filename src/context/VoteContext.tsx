@@ -168,7 +168,7 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     socket.on("voteSuccess", (vote) => {
-      console.log("Vote enregistré avec succès:", vote);
+      console.log("Vote enregistré avec succès ✨✨✨✨✨");
       setIsLoading(false);
       setVotes(prev => [...prev, vote]); // Mettre à jour les votes
       resetSelection();

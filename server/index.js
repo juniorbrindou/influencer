@@ -29,6 +29,204 @@ const httpServer = createServer(
   app
 );
 
+
+
+
+
+// ---------------tracker ip
+
+// Système anti-fraude en mémoire
+const ipFraudTracker = new Map(); // { ipAddress: { voteCount, lastVote, blockedUntil, violations } }
+const blockedIPs = new Set(); // IPs bloquées définitivement ou temporairement
+
+// Configuration anti-fraude
+const FRAUD_CONFIG = {
+  MAX_VOTES_PER_HOUR: 15, // Maximum de votes par heure par IP
+  MAX_VOTES_PER_DAY: 20, // Maximum de votes par jour par IP (un peu plus que 10 pour la marge)
+  BLOCK_DURATION_HOURS: 10, // Durée de blocage en heures
+  VIOLATION_THRESHOLD: 3, // Nombre de violations avant blocage permanent
+  RATE_LIMIT_MINUTES: 2, // Temps minimum entre 2 votes (en minutes)
+  SUSPICIOUS_PATTERN_THRESHOLD: 8, // Si plus de 8 votes en une heure, vérification approfondie
+};
+
+// Fonction de nettoyage du tracker (à appeler périodiquement)
+function cleanupFraudTracker() {
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  for (const [ip, data] of ipFraudTracker.entries()) {
+    // Supprimer les entrées anciennes et débloquer les IPs temporairement bloquées
+    if (data.lastVote < twentyFourHoursAgo) {
+      if (data.blockedUntil && now > data.blockedUntil) {
+        blockedIPs.delete(ip);
+      }
+      if (data.violations < FRAUD_CONFIG.VIOLATION_THRESHOLD) {
+        ipFraudTracker.delete(ip);
+      }
+    }
+  }
+
+  console.log(
+    `🧹 Nettoyage anti-fraude: ${ipFraudTracker.size} IPs trackées, ${blockedIPs.size} bloquées`
+  );
+}
+
+// Fonction de vérification anti-fraude
+function checkIPFraud(ipAddress) {
+  const now = new Date();
+
+  // Vérifier si l'IP est définitivement bloquée
+  if (blockedIPs.has(ipAddress)) {
+    const tracker = ipFraudTracker.get(ipAddress);
+    if (tracker && tracker.blockedUntil && now < tracker.blockedUntil) {
+      return {
+        blocked: true,
+        reason: "IP_TEMPORARILY_BLOCKED",
+        message:
+          "Votre adresse IP est temporairement bloquée pour activité suspecte. Réessayez plus tard.",
+        unblockTime: tracker.blockedUntil,
+      };
+    } else if (
+      tracker &&
+      tracker.violations >= FRAUD_CONFIG.VIOLATION_THRESHOLD
+    ) {
+      return {
+        blocked: true,
+        reason: "IP_PERMANENTLY_BLOCKED",
+        message:
+          "Votre adresse IP a été bloquée définitivement pour fraude répétée.",
+      };
+    }
+  }
+
+  // Récupérer ou créer le tracker pour cette IP
+  let tracker = ipFraudTracker.get(ipAddress) || {
+    voteCount: 0,
+    lastVote: null,
+    violations: 0,
+    hourlyVotes: [],
+    dailyVotes: [],
+  };
+
+  // Nettoyer les votes anciens
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  tracker.hourlyVotes = tracker.hourlyVotes.filter((vote) => vote > oneHourAgo);
+  tracker.dailyVotes = tracker.dailyVotes.filter((vote) => vote > oneDayAgo);
+
+  // Vérifier le rate limiting (temps minimum entre votes)
+  if (tracker.lastVote) {
+    const timeSinceLastVote = (now - tracker.lastVote) / (1000 * 60); // en minutes
+    if (timeSinceLastVote < FRAUD_CONFIG.RATE_LIMIT_MINUTES) {
+      tracker.violations += 0.5; // Violation mineure
+      ipFraudTracker.set(ipAddress, tracker);
+
+      return {
+        blocked: true,
+        reason: "RATE_LIMIT_EXCEEDED",
+        message: `⏳ Merci de patienter ${FRAUD_CONFIG.RATE_LIMIT_MINUTES} minutes entre chaque vote.
+Cela nous permet d'assurer un bon fonctionnement de l'application pour tous. Merci pour votre compréhension 🙏`,
+        waitTime: Math.ceil(
+          FRAUD_CONFIG.RATE_LIMIT_MINUTES - timeSinceLastVote
+        ),
+      };
+    }
+  }
+
+  // Vérifier les limites horaires
+  if (tracker.hourlyVotes.length >= FRAUD_CONFIG.MAX_VOTES_PER_HOUR) {
+    tracker.violations += 1;
+
+    if (tracker.violations >= FRAUD_CONFIG.VIOLATION_THRESHOLD) {
+      // Blocage permanent
+      blockedIPs.add(ipAddress);
+      tracker.blockedUntil = null; // Permanent
+    } else {
+      // Blocage temporaire
+      tracker.blockedUntil = new Date(
+        now.getTime() + FRAUD_CONFIG.BLOCK_DURATION_HOURS * 60 * 60 * 1000
+      );
+      blockedIPs.add(ipAddress);
+    }
+
+    ipFraudTracker.set(ipAddress, tracker);
+
+    return {
+      blocked: true,
+      reason: "HOURLY_LIMIT_EXCEEDED",
+      message:
+        "Trop de votes en peu de temps détectés. Votre IP a été temporairement bloquée.",
+      violations: tracker.violations,
+    };
+  }
+
+  // Vérifier les limites journalières
+  if (tracker.dailyVotes.length >= FRAUD_CONFIG.MAX_VOTES_PER_DAY) {
+    tracker.violations += 1;
+
+    if (tracker.violations >= FRAUD_CONFIG.VIOLATION_THRESHOLD) {
+      blockedIPs.add(ipAddress);
+      tracker.blockedUntil = null; // Permanent
+    } else {
+      tracker.blockedUntil = new Date(
+        now.getTime() + FRAUD_CONFIG.BLOCK_DURATION_HOURS * 60 * 60 * 1000
+      );
+      blockedIPs.add(ipAddress);
+    }
+
+    ipFraudTracker.set(ipAddress, tracker);
+
+    return {
+      blocked: true,
+      reason: "DAILY_LIMIT_EXCEEDED",
+      message: "Limite journalière de votes atteinte. Revenez demain.",
+      violations: tracker.violations,
+    };
+  }
+
+  // Détection de patterns suspects
+  if (tracker.hourlyVotes.length >= FRAUD_CONFIG.SUSPICIOUS_PATTERN_THRESHOLD) {
+    console.log(
+      `🚨 Pattern suspect détecté pour IP ${ipAddress}: ${tracker.hourlyVotes.length} votes en 1h`
+    );
+
+    // Vérification additionnelle en base de données pour cette IP
+    // (Cette vérification sera ajoutée dans le handler de vote)
+  }
+
+  return { blocked: false, tracker };
+}
+
+// Fonction pour enregistrer un vote légitime
+function recordLegitimateVote(ipAddress) {
+  const now = new Date();
+  let tracker = ipFraudTracker.get(ipAddress) || {
+    voteCount: 0,
+    lastVote: null,
+    violations: 0,
+    hourlyVotes: [],
+    dailyVotes: [],
+  };
+
+  tracker.voteCount += 1;
+  tracker.lastVote = now;
+  tracker.hourlyVotes.push(now);
+  tracker.dailyVotes.push(now);
+
+  ipFraudTracker.set(ipAddress, tracker);
+
+  console.log(
+    `📊 Vote enregistré pour IP ${ipAddress}: ${tracker.dailyVotes.length} votes aujourd'hui`
+  );
+}
+
+// ----------------------------fin tracker
+
+
+
+
+
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
@@ -281,6 +479,21 @@ io.on("connection", (socket) => {
         const clientIp =
           socket.request.headers["x-forwarded-for"] ||
           socket.request.connection.remoteAddress;
+          // socket.request.connection.remoteAddress ||
+          // socket.handshake.address;
+
+
+
+ // 🛡️ VÉRIFICATION ANTI-FRAUDE EN PREMIER
+        const fraudCheck = checkIPFraud(clientIp);
+        if (fraudCheck.blocked) {
+          console.log(
+            `🚨 Vote bloqué pour IP ${clientIp}: ${fraudCheck.reason}`
+          );
+          socket.emit("voteError", fraudCheck.message);
+          return;
+        }
+// fin verififaction FRAUDE
 
         // Récupérer l'influenceur avec timeout (optimisé - seulement les infos nécessaires)
         const influenceurWithCat = await prisma.influenceurs
@@ -305,6 +518,52 @@ io.on("connection", (socket) => {
         // Date du jour à minuit
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+
+
+
+
+       // 🔍 VÉRIFICATION SUPPLÉMENTAIRE POUR PATTERNS SUSPECTS ---- fraude
+        if (
+          fraudCheck.tracker &&
+          fraudCheck.tracker.hourlyVotes.length >=
+            FRAUD_CONFIG.SUSPICIOUS_PATTERN_THRESHOLD
+        ) {
+          // Vérifier en base les votes récents de cette IP
+          const recentVotesFromIP = await prisma.votes.count({
+            where: {
+              ipAddress: clientIp,
+              timestamp: { gte: new Date(Date.now() - 60 * 60 * 1000) }, // Dernière heure
+              isValidated: true,
+            },
+          });
+
+          if (recentVotesFromIP >= FRAUD_CONFIG.SUSPICIOUS_PATTERN_THRESHOLD) {
+            console.log(
+              `🚨 Fraude confirmée en DB pour IP ${clientIp}: ${recentVotesFromIP} votes en 1h`
+            );
+
+            // Bloquer l'IP
+            let tracker = ipFraudTracker.get(clientIp);
+            tracker.violations += 2; // Violation majeure
+
+            if (tracker.violations >= FRAUD_CONFIG.VIOLATION_THRESHOLD) {
+              blockedIPs.add(clientIp);
+              tracker.blockedUntil = null; // Permanent
+            } else {
+              tracker.blockedUntil = new Date(
+                Date.now() + FRAUD_CONFIG.BLOCK_DURATION_HOURS * 60 * 60 * 1000
+              );
+              blockedIPs.add(clientIp);
+            }
+
+            ipFraudTracker.set(clientIp, tracker);
+            socket.emit("voteError", politeErrorMessages.fraudDetected);
+            return;
+          }
+        }
+        // fin verification ---- fraude
+
+        
 
         // Vérification des votes existants (optimisée - seulement les champs nécessaires)
         const existingVotes = await prisma.votes
@@ -332,7 +591,7 @@ io.on("connection", (socket) => {
             throw new Error("timeoutError");
           });
 
-        // Logique de validation (inchangée)
+        // Logique de validation
         const hasNormalVote = existingVotes.some((v) => !v.isSpecial);
         const hasSpecialVote = existingVotes.some((v) => v.isSpecial);
 
@@ -370,6 +629,11 @@ io.on("connection", (socket) => {
             console.error("Erreur création vote:", err);
             throw new Error("timeoutError");
           });
+
+
+         // 🎯 ENREGISTRER LE VOTE LÉGITIME DANS LE TRACKER --- fraude
+        recordLegitimateVote(clientIp);
+        // ---fin fraude
 
         // 🚀 OPTIMISATION PRINCIPALE : Mise à jour du cache au lieu d'une requête DB
         let newVoteCount;
@@ -937,19 +1201,6 @@ function incrementLiveResults({ influenceurId, categoryId, isSpecial }) {
   }
 }
 
-// À placer dans le handler "submitVote" après la création du vote validé
-// incrementLiveResults({ influenceurId, categoryId, isSpecial });
-
-/*
-Exemple d'utilisation dans le handler existant :
-Après avoir validé le vote et émis "voteUpdate", ajoutez :
-incrementLiveResults({
-  influenceurId,
-  categoryId: influenceurWithCat.categoryId,
-  isSpecial: isSpecialVote
-});
-*/
-
 // Routes pour les catégories
 app.get("/api/categories", async (_req, res) => {
   try {
@@ -1120,12 +1371,6 @@ app.post("/api/influenceurs", async (req, res) => {
       },
     });
 
-    // Alternative si la version de Prisma ne supporte pas 'mode: insensitive'
-    // const allInfluenceurs = await prisma.influenceurs.findMany();
-    // const existingInfluenceur = allInfluenceurs.find(inf =>
-    //   inf.name.trim().toLowerCase() === cleanedName
-    // );
-
     // 3. Déterminez la valeur de isMain
     const isMain = !existingInfluenceur;
 
@@ -1226,6 +1471,65 @@ app.put("/api/influenceurs/:id", async (req, res) => {
     res.status(500).json({ error: "Erreur lors de la mise à jour" });
   }
 });
+
+
+// Nettoyage périodique du système anti-fraude (toutes les heures)
+setInterval(cleanupFraudTracker, 60 * 60 * 1000);
+
+// Route d'administration pour voir les IPs bloquées (optionnel)
+app.get("/api/admin/blocked-ips", async (req, res) => {
+  if (
+    !req.headers.authorization ||
+    req.headers.authorization !== `Bearer ${process.env.ADMIN_TOKEN}`
+  ) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+
+  const blockedList = [];
+  for (const ip of blockedIPs) {
+    const tracker = ipFraudTracker.get(ip);
+    blockedList.push({
+      ip,
+      violations: tracker?.violations || 0,
+      blockedUntil: tracker?.blockedUntil,
+      lastVote: tracker?.lastVote,
+      totalVotes: tracker?.voteCount || 0,
+    });
+  }
+
+  res.json({
+    totalBlocked: blockedIPs.size,
+    totalTracked: ipFraudTracker.size,
+    blockedIPs: blockedList,
+  });
+});
+
+// Route pour débloquer manuellement une IP (optionnel)
+app.post("/api/admin/unblock-ip", async (req, res) => {
+  if (
+    !req.headers.authorization ||
+    req.headers.authorization !== `Bearer ${process.env.ADMIN_TOKEN}`
+  ) {
+    return res.status(401).json({ error: "Non autorisé" });
+  }
+
+  const { ipAddress } = req.body;
+  if (!ipAddress) {
+    return res.status(400).json({ error: "IP address required" });
+  }
+
+  blockedIPs.delete(ipAddress);
+  ipFraudTracker.delete(ipAddress);
+
+  res.json({ message: `IP ${ipAddress} débloquée avec succès` });
+});
+
+console.log(
+  "🛡️ Système anti-fraude initialisé avec les paramètres:",
+  FRAUD_CONFIG
+);
+
+
 
 // Démarrer le serveur HTTP (pas app.listen)
 const PORT = process.env.PORT || 4000;
