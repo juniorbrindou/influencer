@@ -176,9 +176,6 @@ Cela nous permet d'assurer un bon fonctionnement de l'application pour tous. Mer
     console.log(
       `🚨 Pattern suspect détecté pour IP ${ipAddress}: ${tracker.hourlyVotes.length} votes en 1h`
     );
-
-    // Vérification additionnelle en base de données pour cette IP
-    // (Cette vérification sera ajoutée dans le handler de vote)
   }
 
   return { blocked: false, tracker };

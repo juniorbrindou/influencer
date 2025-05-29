@@ -37,11 +37,11 @@ interface VoteContextType {
 
 export const VoteContext = createContext<VoteContextType | undefined>(undefined);
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 
 // Configuration du socket adaptée au serveur
-const socket = io(SOCKET_URL, {
+const socket = io(BACKEND_URL, {
   withCredentials: true,
   transports: ['websocket'],
   reconnection: true,

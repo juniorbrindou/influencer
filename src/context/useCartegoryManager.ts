@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { Category } from "../types";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
-const socket = io(SOCKET_URL, {
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const socket = io(BACKEND_URL, {
   withCredentials: true,
   transports: ["websocket"],
   reconnection: true,
@@ -52,7 +52,7 @@ export const useCategoryManager = () => {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(SOCKET_URL + `/api/categories`, {
+      const response = await fetch(BACKEND_URL + `/api/categories`, {
         method: 'GET',
         credentials: 'include',
       });

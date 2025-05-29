@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { Influenceur } from "../types";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
-const socket = io(SOCKET_URL, {
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const socket = io(BACKEND_URL, {
   withCredentials: true,
   transports: ["websocket"],
   reconnection: true,
@@ -26,7 +26,7 @@ export const useInfluenceurManager = () => {
         const formData = new FormData();
         formData.append('image', influenceur.imageUrl);
 
-        const uploadResponse = await fetch(SOCKET_URL + '/api/upload', {
+        const uploadResponse = await fetch(BACKEND_URL + '/api/upload', {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -38,7 +38,7 @@ export const useInfluenceurManager = () => {
         finalImageUrl = uploadData.imageUrl;
       }
 
-      const response = await fetch(SOCKET_URL + `/api/influenceurs`, {
+      const response = await fetch(BACKEND_URL + `/api/influenceurs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -74,7 +74,7 @@ export const useInfluenceurManager = () => {
   const removeInfluenceur = async (id: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(SOCKET_URL + `/api/influenceurs/${id}`, {
+      const response = await fetch(BACKEND_URL + `/api/influenceurs/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -97,7 +97,7 @@ export const useInfluenceurManager = () => {
   const updateInfluenceur = async (influenceur: Influenceur) => {
     try {
       setIsLoading(true);
-      const response = await fetch(SOCKET_URL + `/api/influenceurs/${influenceur.id}`, {
+      const response = await fetch(BACKEND_URL + `/api/influenceurs/${influenceur.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -122,7 +122,7 @@ export const useInfluenceurManager = () => {
   // Fonction pour récupérer les influenceurs
   const fetchInfluenceurs = async () => {
     try {
-      const response = await fetch(SOCKET_URL + `/api/influenceurs`, {
+      const response = await fetch(BACKEND_URL + `/api/influenceurs`, {
         method: 'GET',
         credentials: 'include',
       });
