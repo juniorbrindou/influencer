@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { Category, ClassementData, Influenceur, Vote } from '../types';
-import * as FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { Socket } from 'socket.io-client';
 
 
@@ -45,13 +44,9 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 const socket = io(SOCKET_URL, {
   withCredentials: true,
   transports: ['websocket'],
-  // transports: ['websocket', 'polling'],
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
-  // extraHeaders: {
-  //   'x-device-hash': await generateStrongFingerprint()
-  // }
 });
 
 
@@ -287,7 +282,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchCategories();
     fetchInfluenceurs();
-    // fetchVotes();
   }, []);
 
 
@@ -380,21 +374,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const fetchVotes = async () => {
-    try {
-      const response = await fetch(BACKEND_URL + '/api/votes', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      if (!response.ok) throw new Error(`Erreur réseau: ${response.status}`);
-      setVotes(await response.json());
-    } catch (error) {
-      console.error('Erreur chargement votes:', error);
-    }
-  };
 
 
   /**
