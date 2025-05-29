@@ -13,7 +13,6 @@ interface VoteContextType {
   setPhoneNumber: (number: string) => void;
   selectInfluenceur: (influenceur: Influenceur) => void;
   submitVote: (influenceur: Influenceur, phoneNumber: string) => Promise<void>;
-  requestOTP: (influenceur: Influenceur, phoneNumber: string) => Promise<boolean>;
   resetSelection: () => void;
   addInfluenceur: (influenceur: Influenceur) => Promise<void>;
   removeInfluenceur: (id: string) => Promise<void>;
@@ -522,32 +521,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   /**
- * Fonction pour vérifier si un numéro peut voter (n'a pas déjà voté)
- * @returns {Promise<boolean>} - true si le numéro a déjà voté, false sinon
- * @throws {Error} Si la requête échoue
- */
-  const requestOTP = async (selectedInfluenceur: Influenceur, phoneNumberWithoutCode: string): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const fullPhoneNumber = `${countryCode}${phoneNumberWithoutCode.replace(/\D/g, '')}`;
-
-      socket.emit("requestOTP", {
-        phoneNumber: fullPhoneNumber,
-        influenceurId: selectedInfluenceur.id
-      });
-
-      return false; // Retourne false car la réponse sera gérée via les écouteurs socket
-    } catch (error) {
-      setIsLoading(false);
-      setError("Erreur réseau");
-      return false; // Ensure a boolean is returned even in case of an error
-    }
-  };
-
-
-  /**
    * Recuperer les utilisateurs de maniere filtrée et rangée pour la partie classement
    * @param categoryId 
    * @returns promise
@@ -587,7 +560,6 @@ export const VoteProvider: React.FC<{ children: React.ReactNode }> = ({ children
         socket,
         selectInfluenceur,
         submitVote,
-        requestOTP,
         resetSelection,
         addInfluenceur,
         removeInfluenceur,

@@ -196,7 +196,7 @@ const ResultsChart: React.FC<ResultsChartProps> = ({ categoryId, categoryName })
           styleLevel === 2 ? 'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-800' :
             'bg-white text-gray-600'
         }`}>
-        <p>Aucun influenceur dans cette catégorie pour le moment.</p>
+        <p>Patientez le temps de charger les influenceurs...</p>
       </div>
     );
   }

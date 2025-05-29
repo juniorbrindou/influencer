@@ -7,20 +7,10 @@ import dotenv from "dotenv";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import twilio from "twilio";
 import { redisClient } from "./lib/redis.js";
 import requestIp from "request-ip";
 dotenv.config();
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
 
-// Obtenir __dirname en ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const prisma = new PrismaClient();
 const app = express();
@@ -28,10 +18,6 @@ const httpServer = createServer(
   { maxHttpBufferSize: 1e6, pingTimeout: 60000 },
   app
 );
-
-
-
-
 
 // ---------------tracker ip
 
@@ -223,10 +209,6 @@ function recordLegitimateVote(ipAddress) {
 
 // ----------------------------fin tracker
 
-
-
-
-
 // Configuration correcte de Socket.IO avec CORS
 const io = new Server(httpServer, {
   cors: {
@@ -241,7 +223,7 @@ const io = new Server(httpServer, {
   },
   transports: ["websocket", "polling"], // Ajout du polling en fallback
   pingInterval: 25000, // Ping toutes les 25 secondes
-  pingTimeout: 20000,  // Timeout après 20 secondes
+  pingTimeout: 20000, // Timeout après 20 secondes
   maxHttpBufferSize: 1e6,
   allowEIO3: true, // Compatibilité avec les anciennes versions
   // Nouvelles options pour gérer les connexions
@@ -259,7 +241,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://influenceur2lannee.com",
+      process.env.VITE_BACKEND_URL,
       "https://www.influenceur2lannee.com",
     ],
     credentials: true,
@@ -348,10 +330,8 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
   res.json({ imageUrl });
 });
 
-
 // Gestion améliorée des connexions
 const activeConnections = new Map();
-
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
@@ -359,52 +339,53 @@ io.on("connection", (socket) => {
 
   // -----------------------------------------------
 
-    // Enregistrer la connexion active
+  // Enregistrer la connexion active
   activeConnections.set(socket.id, {
     socket,
     connectedAt: new Date(),
     lastActivity: new Date(),
   });
 
-   // Heartbeat pour maintenir la connexion
+  // Heartbeat pour maintenir la connexion
   const heartbeatInterval = setInterval(() => {
     if (socket.connected) {
-      socket.emit('ping');
+      socket.emit("ping");
       activeConnections.get(socket.id).lastActivity = new Date();
     } else {
       clearInterval(heartbeatInterval);
     }
   }, 30000);
 
-
   // Réponse au pong du client
-  socket.on('pong', () => {
+  socket.on("pong", () => {
     if (activeConnections.has(socket.id)) {
       activeConnections.get(socket.id).lastActivity = new Date();
     }
   });
 
   // Gestion des erreurs de connexion
-  socket.on('error', (error) => {
+  socket.on("error", (error) => {
     console.error(`❌ Erreur socket ${socket.id}:`, error);
     cleanupConnection(socket.id, heartbeatInterval);
   });
 
   // Gestion des erreurs de connexion
-  socket.on('error', (error) => {
+  socket.on("error", (error) => {
     console.error(`❌ Erreur socket ${socket.id}:`, error);
     cleanupConnection(socket.id, heartbeatInterval);
   });
 
   // Gestion de la déconnexion
-  socket.on('disconnect', (reason) => {
+  socket.on("disconnect", (reason) => {
     console.log(`🔌 Client déconnecté: ${socket.id}, raison: ${reason}`);
     cleanupConnection(socket.id, heartbeatInterval);
   });
 
   // Gestion de la déconnexion forcée
-  socket.on('disconnecting', (reason) => {
-    console.log(`🔌 Client en cours de déconnexion: ${socket.id}, raison: ${reason}`);
+  socket.on("disconnecting", (reason) => {
+    console.log(
+      `🔌 Client en cours de déconnexion: ${socket.id}, raison: ${reason}`
+    );
   });
 
   // Fonction de nettoyage
@@ -413,7 +394,7 @@ io.on("connection", (socket) => {
       clearInterval(interval);
     }
     activeConnections.delete(socketId);
-    
+
     // Forcer la fermeture si nécessaire
     if (socket && socket.connected) {
       socket.disconnect(true);
@@ -427,7 +408,7 @@ io.on("connection", (socket) => {
   }, 30 * 60 * 1000);
 
   // Nettoyer le timeout à la déconnexion
-  socket.on('disconnect', () => {
+  socket.on("disconnect", () => {
     clearTimeout(inactivityTimeout);
   });
 
@@ -479,12 +460,10 @@ io.on("connection", (socket) => {
         const clientIp =
           socket.request.headers["x-forwarded-for"] ||
           socket.request.connection.remoteAddress;
-          // socket.request.connection.remoteAddress ||
-          // socket.handshake.address;
+        // socket.request.connection.remoteAddress ||
+        // socket.handshake.address;
 
-
-
- // 🛡️ VÉRIFICATION ANTI-FRAUDE EN PREMIER
+        // 🛡️ VÉRIFICATION ANTI-FRAUDE EN PREMIER
         const fraudCheck = checkIPFraud(clientIp);
         if (fraudCheck.blocked) {
           console.log(
@@ -493,7 +472,7 @@ io.on("connection", (socket) => {
           socket.emit("voteError", fraudCheck.message);
           return;
         }
-// fin verififaction FRAUDE
+        // fin verififaction FRAUDE
 
         // Récupérer l'influenceur avec timeout (optimisé - seulement les infos nécessaires)
         const influenceurWithCat = await prisma.influenceurs
@@ -519,10 +498,7 @@ io.on("connection", (socket) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-
-
-
-       // 🔍 VÉRIFICATION SUPPLÉMENTAIRE POUR PATTERNS SUSPECTS ---- fraude
+        // 🔍 VÉRIFICATION SUPPLÉMENTAIRE POUR PATTERNS SUSPECTS ---- fraude
         if (
           fraudCheck.tracker &&
           fraudCheck.tracker.hourlyVotes.length >=
@@ -562,8 +538,6 @@ io.on("connection", (socket) => {
           }
         }
         // fin verification ---- fraude
-
-        
 
         // Vérification des votes existants (optimisée - seulement les champs nécessaires)
         const existingVotes = await prisma.votes
@@ -630,8 +604,7 @@ io.on("connection", (socket) => {
             throw new Error("timeoutError");
           });
 
-
-         // 🎯 ENREGISTRER LE VOTE LÉGITIME DANS LE TRACKER --- fraude
+        // 🎯 ENREGISTRER LE VOTE LÉGITIME DANS LE TRACKER --- fraude
         recordLegitimateVote(clientIp);
         // ---fin fraude
 
@@ -722,138 +695,6 @@ io.on("connection", (socket) => {
     return hash.toString();
   };
 
-  /**
-   * Route pour valider un vote avec OTP
-   * @route POST /api/validate-vote
-   * @param {string} phoneNumber - Numéro de téléphone de l'utilisateur
-   * @param {string} otp - Code OTP
-   * @returns {object} - Détails du vote validé
-   * @throws {400} - Si le numéro de téléphone
-   */
-  socket.on("requestOTP", async ({ phoneNumber, influenceurId }) => {
-    if (!phoneNumber || !influenceurId) {
-      socket.emit("otpError", "Numéro ou influenceur manquant.");
-      return;
-    }
-
-    try {
-      // Récupérer l'influenceur avec sa catégorie
-      const influenceur = await prisma.influenceurs.findUnique({
-        where: { id: influenceurId },
-        include: { category: true },
-      });
-
-      const isSpecialCategory =
-        influenceur.category?.name === "INFLUENCEUR2LANNEE";
-
-      // Vérifier les votes existants
-      const existingVotes = await prisma.votes.findMany({
-        where: {
-          phoneNumber,
-          isValidated: true, // ou false selon votre besoin
-        },
-        include: {
-          influenceurs: {
-            include: {
-              category: true,
-            },
-          },
-        },
-      });
-
-      // Correction ici: utiliser existingVotes[0] pour le vote existant
-      const existingVote = existingVotes.length > 0 ? existingVotes[0] : null;
-
-      const hasNormalVote = existingVotes.some(
-        (v) => v.influenceurs?.category?.name !== "INFLUENCEUR2LANNEE"
-      );
-
-      const hasSpecialVote = existingVotes.some(
-        (v) => v.influenceurs?.category?.name === "INFLUENCEUR2LANNEE"
-      );
-
-      // Logique spéciale pour INFLUENCEUR2LANNEE
-      if (isSpecialCategory) {
-        if (hasSpecialVote) {
-          socket.emit("otpError", "Vous avez déjà utilisé votre vote spécial");
-          return;
-        }
-        if (!hasNormalVote) {
-          socket.emit(
-            "otpError",
-            "Vous devez d'abord voter dans une catégorie normale"
-          );
-          return;
-        }
-      } else {
-        if (hasNormalVote) {
-          socket.emit("offerSecondVote", { canVoteSpecial: true });
-          return;
-        }
-      }
-
-      // Générer un OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-      console.log("📤 Tentative d'envoi WhatsApp via Twilio:", {
-        to: phoneNumber,
-        body: `Votre code de vérification est : ${otp}`,
-        from: process.env.TWILIO_WHATSAPP_NUMBER,
-      });
-
-      // Envoyer l'OTP via Twilio
-      const twilioResponse = await twilioClient.messages.create({
-        body: `Votre code de vérification est : ${otp}. Valide 5 minutes.`,
-        from: process.env.TWILIO_WHATSAPP_NUMBER,
-        to: `whatsapp:${phoneNumber}`,
-      });
-
-      socket.emit("otpSent", otp);
-      console.log("📢 Émission Socket.IO : otpSent", otp);
-
-      console.log("✅ Réponse Twilio:", {
-        status: twilioResponse.status,
-        sid: twilioResponse.sid,
-        dateSent: twilioResponse.dateSent,
-        errorMessage: twilioResponse.errorMessage,
-      });
-
-      // Sauvegarder en base de données
-      if (existingVote) {
-        await prisma.votes.update({
-          where: { id: existingVote.id },
-          data: {
-            otp,
-            otpExpiresAt,
-            influenceurId,
-            isSpecial: isSpecialCategory, // Mettre à jour aussi le flag isSpecial
-          },
-        });
-      } else {
-        await prisma.votes.create({
-          data: {
-            influenceurId,
-            phoneNumber,
-            otp,
-            otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-            isValidated: false,
-            isSpecial: isSpecialCategory,
-          },
-        });
-      }
-    } catch (err) {
-      console.error("❌ Erreur Twilio:", {
-        message: err.message,
-        code: err.code,
-        stack: err.stack,
-        phoneNumber,
-        twilioNumber: process.env.TWILIO_WHATSAPP_NUMBER,
-      });
-
-      socket.emit("otpError", "Échec d'envoi du code. Veuillez réessayer.");
-    }
-  });
 
   socket.on("addCategory", async ({ name, imageUrl }) => {
     try {
@@ -951,23 +792,21 @@ io.on("connection", (socket) => {
   });
 });
 
-
-
 // Nettoyage périodique des connexions mortes
 setInterval(() => {
   const now = new Date();
   const staleConnections = [];
-  
+
   activeConnections.forEach((conn, socketId) => {
     const timeSinceLastActivity = now.getTime() - conn.lastActivity.getTime();
-    
+
     // Si pas d'activité depuis 5 minutes et socket pas connecté
     if (timeSinceLastActivity > 5 * 60 * 1000 && !conn.socket.connected) {
       staleConnections.push(socketId);
     }
   });
-  
-  staleConnections.forEach(socketId => {
+
+  staleConnections.forEach((socketId) => {
     console.log(`🧹 Nettoyage connexion stagnante: ${socketId}`);
     const conn = activeConnections.get(socketId);
     if (conn && conn.socket) {
@@ -975,45 +814,42 @@ setInterval(() => {
     }
     activeConnections.delete(socketId);
   });
-  
+
   if (staleConnections.length > 0) {
     console.log(`🧹 ${staleConnections.length} connexions nettoyées`);
   }
 }, 2 * 60 * 1000); // Toutes les 2 minutes
 
-
-
 // Gestion gracieuse de l'arrêt du serveur
-process.on('SIGTERM', () => {
-  console.log('📴 Arrêt gracieux du serveur...');
-  
+process.on("SIGTERM", () => {
+  console.log("📴 Arrêt gracieux du serveur...");
+
   // Fermer toutes les connexions Socket.IO
   activeConnections.forEach((conn, socketId) => {
     if (conn.socket && conn.socket.connected) {
       conn.socket.disconnect(true);
     }
   });
-  
+
   // Fermer le serveur Socket.IO
   io.close(() => {
-    console.log('✅ Socket.IO fermé');
+    console.log("✅ Socket.IO fermé");
     process.exit(0);
   });
 });
 
+process.on("SIGINT", () => {
+  console.log("📴 Interruption reçue, arrêt du serveur...");
 
-process.on('SIGINT', () => {
-  console.log('📴 Interruption reçue, arrêt du serveur...');
-  
   // Même logique que SIGTERM
   activeConnections.forEach((conn, socketId) => {
     if (conn.socket && conn.socket.connected) {
       conn.socket.disconnect(true);
     }
   });
-  
+
   io.close(() => {
-    console.log('✅ Socket.IO fermé');
+    console.log("✅ Socket.IO fermé");
     process.exit(0);
   });
 });
@@ -1022,7 +858,6 @@ process.on('SIGINT', () => {
 setInterval(() => {
   console.log(`📊 Connexions actives: ${activeConnections.size}`);
 }, 5 * 60 * 1000); // Toutes les 5 minutes
-
 
 app.get("/api/votes", async (_req, res) => {
   try {
@@ -1093,7 +928,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
 
       if (cachedData) {
         // CORRECTION PRINCIPALE : Utiliser le bon type de vote selon la catégorie
-        voteCount = isSpecialCategory 
+        voteCount = isSpecialCategory
           ? cachedData.specialVoteCount || 0
           : cachedData.normalVoteCount || 0;
       } else {
@@ -1156,7 +991,7 @@ async function syncCacheWithDB(influenceurId) {
     const normalCount = await prisma.votes.count({
       where: { influenceurId, isValidated: true, isSpecial: false },
     });
-    
+
     const specialCount = await prisma.votes.count({
       where: { influenceurId, isValidated: true, isSpecial: true },
     });
@@ -1166,8 +1001,10 @@ async function syncCacheWithDB(influenceurId) {
       cachedData.normalVoteCount = normalCount;
       cachedData.specialVoteCount = specialCount;
       cachedData.lastUpdate = new Date();
-      
-      console.log(`🔄 Synchronisation cache DB pour ${influenceurId}: normal=${normalCount}, spécial=${specialCount}`);
+
+      console.log(
+        `🔄 Synchronisation cache DB pour ${influenceurId}: normal=${normalCount}, spécial=${specialCount}`
+      );
     }
   } catch (error) {
     console.error(`❌ Erreur sync cache DB pour ${influenceurId}:`, error);
@@ -1472,7 +1309,6 @@ app.put("/api/influenceurs/:id", async (req, res) => {
   }
 });
 
-
 // Nettoyage périodique du système anti-fraude (toutes les heures)
 setInterval(cleanupFraudTracker, 60 * 60 * 1000);
 
@@ -1528,8 +1364,6 @@ console.log(
   "🛡️ Système anti-fraude initialisé avec les paramètres:",
   FRAUD_CONFIG
 );
-
-
 
 // Démarrer le serveur HTTP (pas app.listen)
 const PORT = process.env.PORT || 4000;
