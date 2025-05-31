@@ -55,6 +55,8 @@ const io = new Server(httpServer, {
   timeout: 20000,
 });
 
+const blacklistedIps = ["102.209.223.30", "45.84.107.55", "45.84.107.101", "45.84.107.33", "45.84.107.17", "109.70.100.6", '109.70.100.4', '109.70.100.5', '45.84.107.47', '185.220.101.6', '45.84.107.128','109.70.100.69', '45.84.107.76'];
+
 app.use(requestIp.mw());
 
 app.use(
@@ -281,6 +283,17 @@ io.on("connection", (socket) => {
           socket.request.headers["x-forwarded-for"] ||
           socket.request.connection.remoteAddress;
 
+          console.log("📍 IP du client:", clientIp);
+
+        if (blacklistedIps.includes(clientIp)) {
+          console.warn(`Tentative de vote depuis IP bannie : ${clientIp}`);
+          socket.emit(
+            "voteError",
+            "Vous avez déjà voté dans cette catégorie aujourd'hui. ❗❗❗"
+          );
+          return;
+        }
+
         // Récupérer l'influenceur avec timeout (optimisé - seulement les infos nécessaires)
         const influenceurWithCat = await prisma.influenceurs
           .findUnique({
@@ -309,10 +322,11 @@ io.on("connection", (socket) => {
         const existingVotes = await prisma.votes
           .findMany({
             where: {
-              OR: [
-                { otp: otp },
-                { ipAddress: clientIp },
-              ],
+              otp: otp,
+              // OR: [
+              //   { otp: otp },
+              //   { ipAddress: clientIp }
+              // ],
               timestamp: { gte: today },
               influenceurs: {
                 categoryId: influenceurWithCat.categoryId,
