@@ -43,7 +43,7 @@ const io = new Server(httpServer, {
   },
   transports: ["websocket", "polling"], // Ajout du polling en fallback
   pingInterval: 25000, // Ping toutes les 25 secondes
-  pingTimeout: 20000,  // Timeout après 20 secondes
+  pingTimeout: 20000, // Timeout après 20 secondes
   maxHttpBufferSize: 1e6,
   allowEIO3: true, // Compatibilité avec les anciennes versions
   // Nouvelles options pour gérer les connexions
@@ -150,10 +150,8 @@ app.post("/api/upload", upload.single("image"), (req, res) => {
   res.json({ imageUrl });
 });
 
-
 // Gestion améliorée des connexions
 const activeConnections = new Map();
-
 
 // Socket.IO connection handling
 io.on("connection", (socket) => {
@@ -161,52 +159,53 @@ io.on("connection", (socket) => {
 
   // -----------------------------------------------
 
-    // Enregistrer la connexion active
+  // Enregistrer la connexion active
   activeConnections.set(socket.id, {
     socket,
     connectedAt: new Date(),
     lastActivity: new Date(),
   });
 
-   // Heartbeat pour maintenir la connexion
+  // Heartbeat pour maintenir la connexion
   const heartbeatInterval = setInterval(() => {
     if (socket.connected) {
-      socket.emit('ping');
+      socket.emit("ping");
       activeConnections.get(socket.id).lastActivity = new Date();
     } else {
       clearInterval(heartbeatInterval);
     }
   }, 30000);
 
-
   // Réponse au pong du client
-  socket.on('pong', () => {
+  socket.on("pong", () => {
     if (activeConnections.has(socket.id)) {
       activeConnections.get(socket.id).lastActivity = new Date();
     }
   });
 
   // Gestion des erreurs de connexion
-  socket.on('error', (error) => {
+  socket.on("error", (error) => {
     console.error(`❌ Erreur socket ${socket.id}:`, error);
     cleanupConnection(socket.id, heartbeatInterval);
   });
 
   // Gestion des erreurs de connexion
-  socket.on('error', (error) => {
+  socket.on("error", (error) => {
     console.error(`❌ Erreur socket ${socket.id}:`, error);
     cleanupConnection(socket.id, heartbeatInterval);
   });
 
   // Gestion de la déconnexion
-  socket.on('disconnect', (reason) => {
+  socket.on("disconnect", (reason) => {
     console.log(`🔌 Client déconnecté: ${socket.id}, raison: ${reason}`);
     cleanupConnection(socket.id, heartbeatInterval);
   });
 
   // Gestion de la déconnexion forcée
-  socket.on('disconnecting', (reason) => {
-    console.log(`🔌 Client en cours de déconnexion: ${socket.id}, raison: ${reason}`);
+  socket.on("disconnecting", (reason) => {
+    console.log(
+      `🔌 Client en cours de déconnexion: ${socket.id}, raison: ${reason}`
+    );
   });
 
   // Fonction de nettoyage
@@ -215,7 +214,7 @@ io.on("connection", (socket) => {
       clearInterval(interval);
     }
     activeConnections.delete(socketId);
-    
+
     // Forcer la fermeture si nécessaire
     if (socket && socket.connected) {
       socket.disconnect(true);
@@ -229,7 +228,7 @@ io.on("connection", (socket) => {
   }, 30 * 60 * 1000);
 
   // Nettoyer le timeout à la déconnexion
-  socket.on('disconnect', () => {
+  socket.on("disconnect", () => {
     clearTimeout(inactivityTimeout);
   });
 
@@ -310,7 +309,10 @@ io.on("connection", (socket) => {
         const existingVotes = await prisma.votes
           .findMany({
             where: {
-              otp: otp,
+              OR: [
+                { otp: otp },
+                { ipAddress: clientIp },
+              ],
               timestamp: { gte: today },
               influenceurs: {
                 categoryId: influenceurWithCat.categoryId,
@@ -687,23 +689,21 @@ io.on("connection", (socket) => {
   });
 });
 
-
-
 // Nettoyage périodique des connexions mortes
 setInterval(() => {
   const now = new Date();
   const staleConnections = [];
-  
+
   activeConnections.forEach((conn, socketId) => {
     const timeSinceLastActivity = now.getTime() - conn.lastActivity.getTime();
-    
+
     // Si pas d'activité depuis 5 minutes et socket pas connecté
     if (timeSinceLastActivity > 5 * 60 * 1000 && !conn.socket.connected) {
       staleConnections.push(socketId);
     }
   });
-  
-  staleConnections.forEach(socketId => {
+
+  staleConnections.forEach((socketId) => {
     console.log(`🧹 Nettoyage connexion stagnante: ${socketId}`);
     const conn = activeConnections.get(socketId);
     if (conn && conn.socket) {
@@ -711,45 +711,42 @@ setInterval(() => {
     }
     activeConnections.delete(socketId);
   });
-  
+
   if (staleConnections.length > 0) {
     console.log(`🧹 ${staleConnections.length} connexions nettoyées`);
   }
 }, 2 * 60 * 1000); // Toutes les 2 minutes
 
-
-
 // Gestion gracieuse de l'arrêt du serveur
-process.on('SIGTERM', () => {
-  console.log('📴 Arrêt gracieux du serveur...');
-  
+process.on("SIGTERM", () => {
+  console.log("📴 Arrêt gracieux du serveur...");
+
   // Fermer toutes les connexions Socket.IO
   activeConnections.forEach((conn, socketId) => {
     if (conn.socket && conn.socket.connected) {
       conn.socket.disconnect(true);
     }
   });
-  
+
   // Fermer le serveur Socket.IO
   io.close(() => {
-    console.log('✅ Socket.IO fermé');
+    console.log("✅ Socket.IO fermé");
     process.exit(0);
   });
 });
 
+process.on("SIGINT", () => {
+  console.log("📴 Interruption reçue, arrêt du serveur...");
 
-process.on('SIGINT', () => {
-  console.log('📴 Interruption reçue, arrêt du serveur...');
-  
   // Même logique que SIGTERM
   activeConnections.forEach((conn, socketId) => {
     if (conn.socket && conn.socket.connected) {
       conn.socket.disconnect(true);
     }
   });
-  
+
   io.close(() => {
-    console.log('✅ Socket.IO fermé');
+    console.log("✅ Socket.IO fermé");
     process.exit(0);
   });
 });
@@ -758,7 +755,6 @@ process.on('SIGINT', () => {
 setInterval(() => {
   console.log(`📊 Connexions actives: ${activeConnections.size}`);
 }, 5 * 60 * 1000); // Toutes les 5 minutes
-
 
 app.get("/api/votes", async (_req, res) => {
   try {
@@ -829,7 +825,7 @@ app.get("/api/results/:categoryId", async (req, res) => {
 
       if (cachedData) {
         // CORRECTION PRINCIPALE : Utiliser le bon type de vote selon la catégorie
-        voteCount = isSpecialCategory 
+        voteCount = isSpecialCategory
           ? cachedData.specialVoteCount || 0
           : cachedData.normalVoteCount || 0;
       } else {
@@ -892,7 +888,7 @@ async function syncCacheWithDB(influenceurId) {
     const normalCount = await prisma.votes.count({
       where: { influenceurId, isValidated: true, isSpecial: false },
     });
-    
+
     const specialCount = await prisma.votes.count({
       where: { influenceurId, isValidated: true, isSpecial: true },
     });
@@ -902,8 +898,10 @@ async function syncCacheWithDB(influenceurId) {
       cachedData.normalVoteCount = normalCount;
       cachedData.specialVoteCount = specialCount;
       cachedData.lastUpdate = new Date();
-      
-      console.log(`🔄 Synchronisation cache DB pour ${influenceurId}: normal=${normalCount}, spécial=${specialCount}`);
+
+      console.log(
+        `🔄 Synchronisation cache DB pour ${influenceurId}: normal=${normalCount}, spécial=${specialCount}`
+      );
     }
   } catch (error) {
     console.error(`❌ Erreur sync cache DB pour ${influenceurId}:`, error);
