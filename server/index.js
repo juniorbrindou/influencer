@@ -253,6 +253,12 @@ io.on("connection", (socket) => {
   socket.on(
     "submitVote",
     async ({ influenceurId, phoneNumber, isSpecialVote, otp }) => {
+      socket.emit(
+            "voteError",
+            "Les votes sont actuellement fermés."
+          );
+      return;
+
       const politeErrorMessages = {
         rateLimit:
           "Trop de votes depuis cette adresse IP. Veuillez réessayer plus tard.",
