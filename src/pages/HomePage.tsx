@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCategoryManager } from '../context/useCartegoryManager';
 import { Category } from '../types';
-import ModalImpact from '../components/ModalAnnouncement';
+import ModalVotesClosed from '../components/ModalVoteClosed';
 
 const HomePage: React.FC = () => {
   const { categories } = useCategoryManager();
@@ -25,6 +25,9 @@ const HomePage: React.FC = () => {
     <div>
       {/* Modale d'annonce */}
         {/* {showModal && <ModalImpact onClose={() => setShowModal(false)} />} */}
+      {showModal && (
+        <ModalVotesClosed onClose={() => setShowModal(false)} />
+      )}
 
       {/* Hero Banner */}
       <div className="w-full h-[400px] relative mb-12">
