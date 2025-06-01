@@ -25,17 +25,6 @@ function App() {
               <Route path="/ia-results" element={<div className="foreground-content"><ResultsPage /></div>} />
               <Route path="/ia" element={<div className="foreground-content"><AdminPage /></div>} />
               
-              {/* Redirection pour l'ancienne route /results */}
-              <Route path="/results" element={
-                <div className="foreground-content flex items-center justify-center">
-                  <div className="text-center p-8 bg-black bg-opacity-80 rounded-lg max-w-2xl mx-auto">
-                    <h2 className="text-2xl font-bold text-yellow-500 mb-4">Disponible prochainement</h2>
-                    <p className="text-white mb-4">Les résultats seront publiés la semaine prochaine.</p>
-                    <Link to="/" className="text-yellow-500 hover:underline">Retour à l'accueil</Link>
-                  </div>
-                </div>
-              } />
-              
               {/* Route 404 - Doit être la dernière */}
               <Route path="*" element={<div className="foreground-content"><NotFoundPage /></div>} />
             </Routes>
