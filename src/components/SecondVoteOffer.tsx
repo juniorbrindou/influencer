@@ -96,7 +96,7 @@ const SecondVoteOffer: React.FC<SecondVoteOfferProps> = ({
             >
               Annuler
             </button>
-            <button 
+            {/* <button 
               onClick={handleAccept}
               disabled={hasVoted}
               className={`px-6 py-2 rounded-md transition-colors duration-300 ${
@@ -106,7 +106,7 @@ const SecondVoteOffer: React.FC<SecondVoteOfferProps> = ({
               }`}
             >
               {hasVoted ? 'Déjà voté' : 'Confirmer mon vote spécial'}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

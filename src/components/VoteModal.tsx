@@ -189,12 +189,12 @@ const VoteModal: React.FC<VoteModalProps> = ({ isSpecialCategory = false }) => {
                 {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
               </div>
 
-              <button
+              {/* <button
                 type="submit"
                 className={`w-full py-2 bg-black text-yellow-500 rounded-md transition-all duration-300 ${isSubmitting || isLoading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-yellow-500 hover:text-black'}`}
               >
                 {isSubmitting ? 'Enregistrement...' : 'Confirmer mon vote'}
-              </button>
+              </button> */}
             </form>
 
 

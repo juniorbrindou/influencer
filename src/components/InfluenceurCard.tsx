@@ -61,12 +61,12 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
             {influenceur.name}
           </h3>
 
-          <button
+          {/* <button
             onClick={handleVoteClick}
             className="w-full py-2 bg-black text-yellow-500 rounded-md hover:bg-yellow-500 hover:text-black transition-all duration-300 transform active:scale-95 hover:shadow-lg"
           >
             Voter
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -93,12 +93,12 @@ const InfluenceurCard: React.FC<InfluenceurCardProps> = ({
                 />
               </div>
 
-              <button
+              {/* <button
                 onClick={handleVoteFromModal}
                 className="w-full py-3 bg-black text-yellow-500 rounded-md hover:bg-yellow-500 hover:text-black transition-all duration-300 font-bold"
               >
                 Voter pour {influenceur.name}
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
