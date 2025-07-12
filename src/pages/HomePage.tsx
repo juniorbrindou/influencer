@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCategoryManager } from '../context/useCartegoryManager';
+import Testimonials from '../components/Testimonials';
 
 const HomePage: React.FC = () => {
   const { categories } = useCategoryManager();
@@ -27,6 +28,9 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Testimonials Section */}
+      <Testimonials />
 
       {/* Content */}
       <div className="container mx-auto px-4 py-8">
